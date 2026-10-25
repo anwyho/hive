@@ -7,6 +7,7 @@ import {
 } from "../../hive/index.js";
 import { polygon } from "../geometry.js";
 import { useInstallHint } from "../hooks/useInstallHint.js";
+import { Help } from "./Help.js";
 import { InstallHint } from "./InstallHint.js";
 import { Switch } from "./Switch.js";
 import { ThemeToggle } from "./ThemeToggle.js";
@@ -67,6 +68,7 @@ export function NewGame({
   const [expansions, setExpansions] = useState<Expansions>(initial.expansions);
   const [tournament, setTournament] = useState(initial.tournamentOpening);
   const install = useInstallHint();
+  const [help, setHelp] = useState(false);
 
   return (
     <div class="setup">
@@ -128,10 +130,15 @@ export function NewGame({
         >
           Start game
         </button>
+        <button class="btn btn-quiet" onClick={() => setHelp(true)}>
+          How to play
+        </button>
         <button class="btn btn-quiet" onClick={onImport}>
           Import a game record
         </button>
       </div>
+
+      {help ? <Help onClose={() => setHelp(false)} /> : null}
 
       <footer class="setup-foot">
         {install.shown ? <InstallHint onDismiss={install.dismiss} /> : null}

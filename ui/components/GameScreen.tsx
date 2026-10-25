@@ -14,12 +14,11 @@ import {
 } from "../../hive/index.js";
 import { sameHex } from "../geometry.js";
 import type { useGame } from "../hooks/useGame.js";
-import type { Outcome } from "../record.js";
+import { lessonFor } from "../lessonBoard.js";
 import {
   colorName,
   kindsInGame,
   moveFor,
-  pieceName,
   queenCovered,
   queenPressure,
   selectBoard,
@@ -28,12 +27,16 @@ import {
 } from "../selection.js";
 import { Board } from "./Board.js";
 import { Hand } from "./Hand.js";
-import { Icon } from "./Icon.js";
+import { Help, HelpButton } from "./Help.js";
+import { BoardOverlay } from "./BoardOverlay.js";
+import { Controls } from "./Controls.js";
+import {
+  ExportSheet,
+  GameOverSheet,
+  MenuSheet,
+  outcomeTitle,
+} from "./GameSheets.js";
 import { MoveList } from "./MoveList.js";
-import { Sheet } from "./Sheet.js";
-import { ThemeToggle } from "./ThemeToggle.js";
-import { TileIcon } from "./Tile.js";
-import { UpdateRow } from "./UpdateRow.js";
 
 type Game = ReturnType<typeof useGame>;
 
@@ -44,12 +47,6 @@ interface Props {
 }
 
 const NONE: Pick = { selection: null, targets: [], notice: null };
-
-export function outcomeTitle(outcome: Outcome): string {
-  return outcome.kind === "drawn"
-    ? "Draw"
-    : `${colorName(outcome.winner)} wins`;
-}
 
 export function GameScreen({ game, onNewGame, onImport }: Props) {
   const { record, state: maybe, outcome } = game;
@@ -66,6 +63,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
     null,
   );
   const [menu, setMenu] = useState(false);
+  const [help, setHelp] = useState<number | null>(null);
   const [moves, setMoves] = useState(false);
   const [exported, setExported] = useState<string | null>(null);
   const [overOpen, setOverOpen] = useState(outcome !== null);
@@ -163,7 +161,6 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
   );
 
   const ply = record.cursor;
-  const status = outcome ? outcomeTitle(outcome) : `${colorName(turn)} to move`;
   const shownStack =
     held?.at === state
       ? held.hex
@@ -185,51 +182,38 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
           onTap={tapHex}
           onHold={holdHex}
         />
-        <div class="status" aria-live="polite">
-          <strong>{status}</strong>
-          <span>
-            {game.reviewing
+        <HelpButton
+          onClick={() =>
+            setHelp(pick.selection ? lessonFor(bugOf(pick.selection.piece)) : 0)
+          }
+        />
+        <BoardOverlay
+          status={
+            outcome ? outcomeTitle(outcome) : `${colorName(turn)} to move`
+          }
+          detail={
+            game.reviewing
               ? `Move ${ply} of ${record.moves.length}`
               : outcome
                 ? `after ${record.moves.length} moves`
-                : `Turn ${Math.floor(ply / 2) + 1}`}
-          </span>
-        </div>
-        {stackPieces.length > 1 ? (
-          <ol class="stack" aria-label="Stack, bottom to top">
-            {stackPieces.map((piece) => (
-              <li key={piece}>
-                <TileIcon piece={piece} label={pieceName(piece)} />
-              </li>
-            ))}
-          </ol>
-        ) : null}
-        <div class="board-foot">
-          {notice ? (
-            <p class="notice" key={notice.n} role="status">
-              {notice.text}
-            </p>
-          ) : null}
-          {game.mustPass && game.humanToMove ? (
-            <div class="pass" role="alert">
-              <span>{colorName(turn)} has no legal move and must pass.</span>
-              <button
-                class="btn btn-primary"
-                onClick={() => game.play({ kind: "pass" })}
-              >
-                Pass
-              </button>
-            </div>
-          ) : null}
-          {game.reviewing && !game.mustPass ? (
-            <button
-              class="btn btn-small"
-              onClick={() => game.jump(record.moves.length)}
-            >
-              Back to the latest move
-            </button>
-          ) : null}
-        </div>
+                : `Turn ${Math.floor(ply / 2) + 1}`
+          }
+          stack={stackPieces}
+          notice={notice}
+          pass={
+            game.mustPass && game.humanToMove
+              ? {
+                  message: `${colorName(turn)} has no legal move and must pass.`,
+                  onPass: () => game.play({ kind: "pass" }),
+                }
+              : null
+          }
+          onLatest={
+            game.reviewing && !game.mustPass
+              ? () => game.jump(record.moves.length)
+              : null
+          }
+        />
       </div>
 
       <div class="area-white">{hand("w")}</div>
@@ -242,106 +226,52 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
         onClose={() => setMoves(false)}
       />
 
-      <nav class="controls" aria-label="Game controls">
-        <button class="ctl" disabled={!game.canUndo} onClick={game.undo}>
-          <Icon name="undo" />
-          Undo
-        </button>
-        <button class="ctl" disabled={!game.canRedo} onClick={game.redo}>
-          <Icon name="redo" />
-          Redo
-        </button>
-        <button
-          class="ctl ctl-moves"
-          aria-expanded={moves}
-          onClick={() => setMoves(!moves)}
-        >
-          <Icon name="moves" />
-          Moves
-        </button>
-        <button
-          class="ctl"
-          aria-haspopup="dialog"
-          onClick={() => setMenu(true)}
-        >
-          <Icon name="menu" />
-          Menu
-        </button>
-      </nav>
+      <Controls
+        canUndo={game.canUndo}
+        canRedo={game.canRedo}
+        movesOpen={moves}
+        onUndo={game.undo}
+        onRedo={game.redo}
+        onMoves={() => setMoves(!moves)}
+        onMenu={() => setMenu(true)}
+      />
 
       {menu ? (
-        <Sheet title="Menu" onClose={() => setMenu(false)}>
-          <div class="menu">
-            <button class="btn" onClick={onNewGame}>
-              New game
-            </button>
-            <button class="btn" onClick={copy}>
-              Copy game record
-            </button>
-            <button
-              class="btn"
-              onClick={() => {
-                setMenu(false);
-                onImport();
-              }}
-            >
-              Import a game record
-            </button>
-            {!outcome ? (
-              <div class="menu-row">
-                <button
-                  class="btn"
-                  onClick={() => {
-                    setMenu(false);
-                    game.end({ kind: "agreed" });
-                  }}
-                >
-                  Agree to a draw
-                </button>
-                <button
-                  class="btn btn-danger"
-                  onClick={() => {
-                    setMenu(false);
-                    game.end({ kind: "resigned", by: turn });
-                  }}
-                >
-                  Resign as {colorName(turn)}
-                </button>
-              </div>
-            ) : null}
-            <div class="actions">
-              <ThemeToggle />
-            </div>
-            <UpdateRow />
-          </div>
-        </Sheet>
+        <MenuSheet
+          turn={outcome ? null : turn}
+          onClose={() => setMenu(false)}
+          onNewGame={onNewGame}
+          onCopy={copy}
+          onImport={() => {
+            setMenu(false);
+            onImport();
+          }}
+          onDraw={() => {
+            setMenu(false);
+            game.end({ kind: "agreed" });
+          }}
+          onResign={() => {
+            setMenu(false);
+            game.end({ kind: "resigned", by: turn });
+          }}
+        />
       ) : null}
 
       {overOpen && outcome ? (
-        <Sheet title="Game over" class="over">
-          <p class="over-title">{outcomeTitle(outcome)}</p>
-          <p class="over-by">{outcome.by}</p>
-          <div class="menu">
-            <button class="btn btn-primary" onClick={onNewGame}>
-              New game
-            </button>
-            <button class="btn" onClick={game.retract}>
-              Undo last move
-            </button>
-            <button class="btn" onClick={() => setOverOpen(false)}>
-              Review
-            </button>
-          </div>
-        </Sheet>
+        <GameOverSheet
+          outcome={outcome}
+          onNewGame={onNewGame}
+          onUndo={game.retract}
+          onReview={() => setOverOpen(false)}
+        />
+      ) : null}
+
+      {help !== null ? (
+        <Help start={help} onClose={() => setHelp(null)} />
       ) : null}
 
       {exported !== null ? (
-        <Sheet title="Game record" onClose={() => setExported(null)}>
-          <p class="sheet-note">
-            Copying was blocked. Select the text below and copy it.
-          </p>
-          <textarea class="record-text" readOnly rows={5} value={exported} />
-        </Sheet>
+        <ExportSheet text={exported} onClose={() => setExported(null)} />
       ) : null}
     </div>
   );

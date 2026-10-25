@@ -15,6 +15,7 @@
   --board-bg: var(--color-surface);
   --queen-mark: var(--bug-q-on-light);
   --queen-mark-ink: var(--piece-w);
+  --cant-mark: var(--bug-l-on-light);
 
   --bug-q-on-light: oklch(0.56 0.115 75);
   --bug-q-on-dark: oklch(0.86 0.15 88);
@@ -44,4 +45,5 @@
   --board-bg: var(--color-neutral-100);
   --queen-mark: var(--bug-q-on-dark);
   --queen-mark-ink: var(--piece-b);
+  --cant-mark: var(--bug-l-on-dark);
 }
