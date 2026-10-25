@@ -43,7 +43,7 @@ describe("chooseMove", () => {
     ];
     let checked = 0;
     sets.forEach((expansions, i) => {
-      const options = { expansions, tournamentOpening: i % 2 === 0 };
+      const options = { expansions };
       for (let seed = 1; seed <= 8; seed++) {
         const random = testSeeded(seed * 31 + i);
         let state = newGame(options);
@@ -70,10 +70,7 @@ describe("chooseMove", () => {
 
   it("answers a forced pass with a pass", () => {
     const game = parseGame(FORCED_PASS);
-    assert.equal(
-      chooseMove(game, { level: "hard", seed: 1 }).move.kind,
-      "pass",
-    );
+    assert.equal(chooseMove(game, { level: 7, seed: 1 }).move.kind, "pass");
   });
 
   it("takes a win that is one move away, at every level", () => {
@@ -92,14 +89,14 @@ describe("chooseMove", () => {
     }
   });
 
-  it("does not hand the opponent a win when a safe move exists, at medium and hard", () => {
+  it("does not hand the opponent a win when a safe move exists, from level 4", () => {
     const found = [
       ...positions(hasTrap, 3, NONE),
       ...positions(hasTrap, 3, ALL),
     ];
     assert.ok(found.length >= 4, `${found.length} positions with a trap`);
     for (const { game, state } of found) {
-      for (const level of ["medium", "hard"] as const) {
+      for (const level of [4, 5, 6, 7] as const) {
         const { move } = chooseMove(game, {
           level,
           seed: 7,
@@ -129,11 +126,11 @@ describe("chooseMove", () => {
     }
   });
 
-  it("varies easy's choice with the seed", () => {
+  it("varies a low level's choice with the seed", () => {
     const { game } = first((s) => legalMoves(s).length > 30, ALL);
     const seen = new Set(
       [1, 2, 3, 4, 5, 6, 7, 8].map((seed) =>
-        JSON.stringify(chooseMove(game, { level: "easy", seed }).move),
+        JSON.stringify(chooseMove(game, { level: 2, seed }).move),
       ),
     );
     assert.ok(seen.size > 1);
@@ -144,7 +141,7 @@ describe("chooseMove", () => {
     for (const timeMs of [50, 200]) {
       const start = performance.now();
       const c = chooseMove(game, {
-        level: "hard",
+        level: 7,
         seed: 1,
         limits: { timeMs, maxNodes: Infinity },
       });
@@ -157,7 +154,7 @@ describe("chooseMove", () => {
   it("stops at the node cap, and reports a completed depth", () => {
     const { game } = first((s) => legalMoves(s).length > 40, ALL);
     const c = chooseMove(game, {
-      level: "hard",
+      level: 7,
       seed: 1,
       limits: { maxNodes: 2000, timeMs: Infinity },
     });
@@ -169,7 +166,7 @@ describe("chooseMove", () => {
     const { game, state } = first(hasWin, NONE);
     const win = legalMoves(state).find((m) => wins(state, m))!;
     const over = { ...game, moves: [...game.moves, win] };
-    assert.throws(() => chooseMove(over, { level: "easy", seed: 1 }), /over/);
+    assert.throws(() => chooseMove(over, { level: 1, seed: 1 }), /over/);
   });
 });
 
@@ -178,7 +175,8 @@ describe("search, with a stand-in evaluator", () => {
     maxDepth: 2,
     maxNodes: Infinity,
     timeMs: Infinity,
-    noise: 0,
+    scoreAll: false,
+    reductions: false,
   };
 
   it("finds a win from the rules alone", () => {

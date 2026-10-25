@@ -23,7 +23,7 @@ describe("Zobrist hashing", () => {
     for (let seed = 1; seed <= 20; seed++) {
       const random = seeded(seed);
       let pos = rootPosition({
-        options: { expansions: ALL, tournamentOpening: true },
+        options: { expansions: ALL },
         moves: [],
       });
       for (let ply = 0; ply < 80 && result(pos.state) === "inProgress"; ply++) {

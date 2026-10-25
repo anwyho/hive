@@ -17,7 +17,8 @@
     "test:unit": "node --test \"dist/tests/*.test.js\"",
     "test:browser": "node --test --test-concurrency=1 \"dist/tests/browser/*.test.js\"",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "ladder": "node dist/tests/ladder.js"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",

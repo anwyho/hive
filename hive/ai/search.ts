@@ -6,7 +6,7 @@ import {
   type Move,
 } from "../index.js";
 import { advance, type Position } from "./hash.js";
-import { moveKey, orderMoves, sameMove } from "./ordering.js";
+import { forcing, moveKey, orderMoves, sameMove } from "./ordering.js";
 import { EXACT, LOWER, Table, UPPER } from "./table.js";
 
 /* A static score for an unfinished position, from the side to move's point
@@ -17,10 +17,12 @@ export interface Limits {
   readonly maxDepth: number;
   readonly maxNodes: number;
   readonly timeMs: number;
-  /* Each root move gets a fixed bonus drawn from [0, noise). Above 0, every
-     root move is searched with a full window so the bonuses compare real
-     scores, not bounds. */
-  readonly noise: number;
+  /* Search every root move with a full window, so `scored` holds exact
+     scores rather than bounds. */
+  readonly scoreAll: boolean;
+  /* Late-move reductions: quiet moves late in the ordering are searched a
+     ply shallower first, and fully only if they look better than the best. */
+  readonly reductions: boolean;
 }
 
 export interface SearchOptions {
@@ -29,18 +31,26 @@ export interface SearchOptions {
   readonly now?: () => number;
 }
 
-export interface SearchResult {
+export interface Scored {
   readonly move: Move;
   readonly score: number;
+}
+
+export interface SearchResult extends Scored {
   readonly depth: number;
   readonly nodes: number;
   readonly ms: number;
+  /* Root moves with their scores from the last completed depth, best first;
+     exact only under `scoreAll`. */
+  readonly scored: readonly Scored[];
 }
 
 export const WIN = 1_000_000;
-const MATE = WIN - 1000;
+export const MATE = WIN - 1000;
 const INF = WIN + 1;
 const CHECK_EVERY = 512;
+const REDUCE_AFTER = 3;
+const REDUCE_FROM_DEPTH = 3;
 
 class Stop extends Error {}
 
@@ -114,18 +124,32 @@ export function search(
       killers: killers[ply] ?? [],
       history,
     });
+    const isForcing = forcing(pos.state);
     const alpha0 = alpha;
     let best = -INF;
     let bestMove: Move | null = null;
-    for (const move of moves) {
+    for (let i = 0; i < moves.length; i++) {
+      const move = moves[i]!;
       const child = advance(pos, move);
-      /* Principal variation search: after the first move, try to prove each
-         one no better with a null window, and search fully only if it is. */
       let s: number;
       if (bestMove === null) {
         s = -negamax(child, depth - 1, -beta, -alpha, ply + 1);
       } else {
-        s = -negamax(child, depth - 1, -alpha - 1, -alpha, ply + 1);
+        const reduce =
+          limits.reductions &&
+          i >= REDUCE_AFTER &&
+          depth >= REDUCE_FROM_DEPTH &&
+          !isForcing(move);
+        s = -negamax(
+          child,
+          depth - (reduce ? 2 : 1),
+          -alpha - 1,
+          -alpha,
+          ply + 1,
+        );
+        if (reduce && s > alpha) {
+          s = -negamax(child, depth - 1, -alpha - 1, -alpha, ply + 1);
+        }
         if (s > alpha && s < beta) {
           s = -negamax(child, depth - 1, -beta, -alpha, ply + 1);
         }
@@ -159,42 +183,59 @@ export function search(
   if (rootMoves.length === 0) {
     throw new Error("the game is over; there is no move to choose");
   }
-  const bonus = new Map<Move, number>(
-    rootMoves.map((m) => [m, limits.noise > 0 ? random() * limits.noise : 0]),
-  );
-  let chosen: { move: Move; score: number; depth: number } = {
-    move: rootMoves[0]!,
-    score: 0,
+  let done: { scored: Scored[]; depth: number } = {
+    scored: [{ move: rootMoves[0]!, score: 0 }],
     depth: 0,
   };
 
   for (let depth = 1; depth <= limits.maxDepth; depth++) {
     depthNow = depth;
     const ordered = orderMoves(root.state, rootMoves, {
-      best: chosen.depth > 0 ? chosen.move : null,
+      best: done.depth > 0 ? done.scored[0]!.move : null,
       killers: [],
       history,
     });
-    let found: { move: Move; score: number } | null = null;
+    const scored: Scored[] = [];
     let alpha = -INF;
     try {
       for (const move of ordered) {
         const child = advance(root, move);
-        const s =
-          limits.noise > 0
-            ? -negamax(child, depth - 1, -INF, INF, 1) + bonus.get(move)!
-            : -negamax(child, depth - 1, -INF, -alpha, 1);
-        if (found === null || s > found.score) found = { move, score: s };
+        const s = limits.scoreAll
+          ? -negamax(child, depth - 1, -INF, INF, 1)
+          : -negamax(child, depth - 1, -INF, -alpha, 1);
+        scored.push({ move, score: s });
         if (s > alpha) alpha = s;
       }
     } catch (e) {
       if (!(e instanceof Stop)) throw e;
-      if (found) chosen = { ...found, depth: depth - 1 };
+      /* The first move searched was the previous best, so anything that
+         beat it at this depth is better still. */
+      const top = best(scored);
+      if (top && top !== scored[0]) {
+        done = { scored: [top, ...done.scored], depth: depth - 1 };
+      }
       break;
     }
-    chosen = { ...found!, depth };
-    if (Math.abs(chosen.score) > MATE) break;
+    done = { scored: sortByScore(scored), depth };
+    if (Math.abs(done.scored[0]!.score) > MATE) break;
   }
 
-  return { ...chosen, nodes, ms: now() - start };
+  const top = done.scored[0]!;
+  return {
+    move: top.move,
+    score: top.score,
+    depth: done.depth,
+    nodes,
+    ms: now() - start,
+    scored: done.scored,
+  };
 }
+
+function best(scored: readonly Scored[]): Scored | undefined {
+  let top: Scored | undefined;
+  for (const s of scored) if (!top || s.score > top.score) top = s;
+  return top;
+}
+
+const sortByScore = (scored: Scored[]) =>
+  [...scored].sort((a, b) => b.score - a.score);

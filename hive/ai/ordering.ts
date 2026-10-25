@@ -52,6 +52,19 @@ const ATTACK = 1e7;
 const KILLER = 1e6;
 const RELIEF = 1e5;
 
+/* A move that brings a piece onto the enemy queen's ring, or onto the queen
+   itself. Search never reduces these. */
+export function forcing(state: GameState): (move: Move) => boolean {
+  const enemy = positionOf(state, QUEEN[toMove(state) === "w" ? "b" : "w"]);
+  return (move) => {
+    if (move.kind !== "move" || !enemy) return false;
+    const to = distance(move.to, enemy);
+    if (to > 1) return false;
+    const from = positionOf(state, move.piece);
+    return !from || distance(from, enemy) > 1 || to === 0;
+  };
+}
+
 export function orderMoves(
   state: GameState,
   moves: readonly Move[],

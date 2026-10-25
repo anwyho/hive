@@ -45,7 +45,7 @@ export function positions(
   expansions: Expansions = NONE,
 ): Found[] {
   const found: Found[] = [];
-  const options = { expansions, tournamentOpening: true };
+  const options = { expansions };
   for (let seed = 1; found.length < count && seed < 5000; seed++) {
     const random = seeded(seed);
     let state = newGame(options);
