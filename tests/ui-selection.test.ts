@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
+import { stateFrom } from "../hive/game.js";
 import {
   bugOf,
   destinations,
@@ -170,14 +171,12 @@ describe("display helpers", () => {
 describe("stacks", () => {
   const ids = (...p: string[]) => p.map(parsePieceId);
 
-  it("name the piece directly beneath and every buried queen", () => {
+  it("name every buried queen", () => {
     assert.deepEqual(stackMarks(ids("bS1", "bB1", "bM"), "w"), {
-      beneath: "bB1",
       buriedQueens: [],
       threat: false,
     });
     assert.deepEqual(stackMarks(ids("wQ"), "w"), {
-      beneath: null,
       buriedQueens: [],
       threat: false,
     });
@@ -204,5 +203,41 @@ describe("stacks", () => {
     assert.equal(typeof queenPressure(s, "w"), "number");
     assert.equal(queenCovered(stateOf(TALL_STACK), "w"), false);
     assert.equal(queenCovered(newGame(), "w"), false);
+  });
+});
+
+describe("a pillbug throw", () => {
+  const s = stateFrom(
+    { expansions: { mosquito: false, ladybug: false, pillbug: true } },
+    [
+      [{ q: 0, r: 0 }, [parsePieceId("wP")]],
+      [{ q: 1, r: 0 }, [parsePieceId("bA1")]],
+      [{ q: -1, r: 0 }, [parsePieceId("wQ")]],
+      [{ q: -2, r: 0 }, [parsePieceId("bQ")]],
+    ],
+    { ply: 20 },
+  );
+
+  it("selects the opponent's piece with the throw cells as targets", () => {
+    const pick = selectBoard(s, { q: 1, r: 0 });
+    assert.equal(pick.selection?.piece, "bA1");
+    assert.ok(pick.targets.length > 0);
+    for (const t of pick.targets) {
+      assert.equal(
+        Math.max(Math.abs(t.q), Math.abs(t.r), Math.abs(t.q + t.r)),
+        1,
+      );
+    }
+  });
+
+  it("freezes the thrown piece for its owner's next turn", () => {
+    const pick = selectBoard(s, { q: 1, r: 0 });
+    const move = moveFor(pick.selection, pick.targets, pick.targets[0]!)!;
+    assert.equal(move.kind, "move");
+    const after = play(s, move);
+    assert.equal(
+      selectBoard(after, pick.targets[0]!).notice,
+      "This piece moved last turn, so it has to stay put.",
+    );
   });
 });

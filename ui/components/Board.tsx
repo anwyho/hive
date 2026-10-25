@@ -26,7 +26,7 @@ import {
 import { usePanZoom } from "../hooks/usePanZoom.js";
 import type { LastMove } from "../record.js";
 import { stackLabel, stackMarks } from "../selection.js";
-import { MiniTile, TileBody } from "./Tile.js";
+import { TileBody } from "./Tile.js";
 
 interface Props {
   state: GameState;
@@ -41,7 +41,6 @@ interface Props {
    one circumradius. */
 const TILE = 0.02;
 const LIFT = 6;
-const PEEK = 7;
 const MARGIN = 14;
 const OUTLINE = polygon(44);
 const MARK = polygon(38);
@@ -91,10 +90,6 @@ export function Board({
 
   const selectedKey = selected ? hexKey(selected) : null;
   const turn = toMove(state);
-  const under = (hex: Hex, depth: number) => {
-    const p = hexToPoint(hex);
-    return `translate(${p.x} ${p.y}) scale(${TILE}) translate(${-PEEK * depth} ${PEEK * depth})`;
-  };
   const at = (hex: Hex, lift = 0) => {
     const p = hexToPoint(hex);
     return `translate(${p.x} ${p.y}) scale(${TILE}) translate(0 ${-lift})`;
@@ -123,14 +118,6 @@ export function Board({
             const key = hexKey(hex);
             return (
               <g key={key}>
-                {stack.slice(0, -1).map((piece, level) => (
-                  <g
-                    key={piece}
-                    transform={under(hex, stack.length - 1 - level)}
-                  >
-                    <TileBody piece={piece} class="under" />
-                  </g>
-                ))}
                 <g
                   transform={at(hex, key === selectedKey ? LIFT : 0)}
                   aria-label={stackLabel(stack)}
@@ -181,11 +168,6 @@ export function Board({
                     }
                     points={OUTLINE}
                   />
-                ) : null}
-                {marks.beneath ? (
-                  <g class="beneath" transform="translate(-25 23)">
-                    <MiniTile piece={marks.beneath} />
-                  </g>
                 ) : null}
                 {marks.buriedQueens.length > 0 ? (
                   <g class="crown-mark" transform="translate(-27 -27)">

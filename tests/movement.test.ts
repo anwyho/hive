@@ -1,6 +1,8 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
-import { assertTargets, picture } from "./support/position.js";
+import { stateFrom } from "../hive/game.js";
+import { destinations, parsePieceId } from "../hive/index.js";
+import { assertTargets, cellsOf, picture } from "./support/position.js";
 
 describe("queen", () => {
   it("slides one cell while keeping contact", () => {
@@ -199,5 +201,51 @@ describe("ladybug", () => {
       .   .   .   *   *   .
     `);
     assertTargets(open.state, "wL", open.marks);
+  });
+});
+
+describe("ant around gated pockets", () => {
+  it("reaches every outside cell of a long hive and neither pocket", () => {
+    const at = (q: number, r: number) => ({ q, r });
+    const state = stateFrom(
+      {},
+      [
+        [at(1, -1), [parsePieceId("wG1")]],
+        [at(0, 0), [parsePieceId("bQ")]],
+        [at(1, 0), [parsePieceId("wG2")]],
+        [at(1, 1), [parsePieceId("bG1")]],
+        [at(-1, 2), [parsePieceId("bS1")]],
+        [at(0, 2), [parsePieceId("bS2")]],
+        [at(-2, 3), [parsePieceId("wS1")]],
+        [at(-2, 4), [parsePieceId("wS2")]],
+        [at(-1, 4), [parsePieceId("wQ")]],
+        [at(-3, 3), [parsePieceId("wA1")]],
+      ],
+      { ply: 14 },
+    );
+    const found = cellsOf(destinations(state, parsePieceId("wA1")));
+    assert.deepEqual(
+      found,
+      [
+        "-1,0",
+        "-1,1",
+        "-1,5",
+        "-2,2",
+        "-2,5",
+        "-3,4",
+        "-3,5",
+        "0,-1",
+        "0,3",
+        "0,4",
+        "1,-2",
+        "1,2",
+        "2,-1",
+        "2,-2",
+        "2,0",
+        "2,1",
+      ].sort(),
+    );
+    assert.ok(!found.includes("0,1"), "the pocket at (0,1)");
+    assert.ok(!found.includes("-1,3"), "the pocket at (-1,3)");
   });
 });

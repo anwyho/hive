@@ -9,6 +9,7 @@ import {
   topAt,
   type Bug,
   type Color,
+  type GameState,
   type Hex,
 } from "../../hive/index.js";
 import { sameHex } from "../geometry.js";
@@ -53,11 +54,17 @@ export function outcomeTitle(outcome: Outcome): string {
 export function GameScreen({ game, onNewGame, onImport }: Props) {
   const { record, state: maybe, outcome } = game;
   const state = maybe!;
-  const [pick, setPick] = useState<Pick>(NONE);
+  /* Both belong to the position they were made in; a new position (a move,
+     an undo, an import) drops them without waiting for an effect. */
+  const [picked, setPicked] = useState<{ at: GameState; pick: Pick } | null>(
+    null,
+  );
+  const [held, setHeld] = useState<{ at: GameState; hex: Hex } | null>(null);
+  const pick = picked?.at === state ? picked.pick : NONE;
+  const setPick = (p: Pick) => setPicked({ at: state, pick: p });
   const [notice, setNotice] = useState<{ text: string; n: number } | null>(
     null,
   );
-  const [stack, setStack] = useState<Hex | null>(null);
   const [menu, setMenu] = useState(false);
   const [moves, setMoves] = useState(false);
   const [exported, setExported] = useState<string | null>(null);
@@ -67,11 +74,6 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
     ? `${record.moves.length}:${record.ending?.kind ?? ""}`
     : null;
   useEffect(() => setOverOpen(endKey !== null), [endKey]);
-
-  useEffect(() => {
-    setPick(NONE);
-    setStack(null);
-  }, [state]);
 
   useEffect(() => {
     if (notice === null) return;
@@ -103,8 +105,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
       game.play(move);
       return;
     }
-    const height = stackAt(state, hex).length;
-    setStack(height > 1 ? hex : null);
+    setHeld(null);
     const current = pick.selection;
     if (
       topAt(state, hex) === undefined ||
@@ -119,11 +120,11 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
   };
 
   const holdHex = (hex: Hex) => {
-    setStack(stackAt(state, hex).length > 0 ? hex : null);
+    setHeld(stackAt(state, hex).length > 1 ? { at: state, hex } : null);
   };
 
   const pickBug = (color: Color, bug: Bug) => {
-    setStack(null);
+    setHeld(null);
     const current = pick.selection;
     if (current?.kind === "hand" && bugOf(current.piece) === bug) {
       setPick(NONE);
@@ -163,7 +164,13 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
 
   const ply = record.cursor;
   const status = outcome ? outcomeTitle(outcome) : `${colorName(turn)} to move`;
-  const stackPieces = stack ? stackAt(state, stack) : [];
+  const shownStack =
+    held?.at === state
+      ? held.hex
+      : pick.selection?.kind === "board"
+        ? pick.selection.at
+        : null;
+  const stackPieces = shownStack ? stackAt(state, shownStack) : [];
 
   return (
     <div class="game">
@@ -188,30 +195,20 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
                 : `Turn ${Math.floor(ply / 2) + 1}`}
           </span>
         </div>
+        {stackPieces.length > 1 ? (
+          <ol class="stack" aria-label="Stack, bottom to top">
+            {stackPieces.map((piece) => (
+              <li key={piece}>
+                <TileIcon piece={piece} label={pieceName(piece)} />
+              </li>
+            ))}
+          </ol>
+        ) : null}
         <div class="board-foot">
           {notice ? (
             <p class="notice" key={notice.n} role="status">
               {notice.text}
             </p>
-          ) : null}
-          {stackPieces.length > 0 ? (
-            <div class="stack" role="group" aria-label="Stack, bottom to top">
-              <span class="stack-title">Stack, bottom to top</span>
-              <ol>
-                {stackPieces.map((piece) => (
-                  <li key={piece}>
-                    <TileIcon piece={piece} label={pieceName(piece)} />
-                  </li>
-                ))}
-              </ol>
-              <button
-                class="icon-btn"
-                aria-label="Close stack"
-                onClick={() => setStack(null)}
-              >
-                <Icon name="close" />
-              </button>
-            </div>
           ) : null}
           {game.mustPass && game.humanToMove ? (
             <div class="pass" role="alert">
@@ -299,7 +296,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
                     game.end({ kind: "agreed" });
                   }}
                 >
-                  Agree a draw
+                  Agree to a draw
                 </button>
                 <button
                   class="btn btn-danger"

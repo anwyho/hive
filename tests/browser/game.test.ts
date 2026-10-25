@@ -231,6 +231,50 @@ describe("playing a game", () => {
     assert.equal(await count(page, ".fit-on"), 0);
     await page.close();
   });
+
+  it("starts an imported game fresh: fitted, unselected, and announcing its own ending", async () => {
+    const page = await open();
+    await startWith(page, []);
+    await place(page, "White spider");
+    const board = (await rectOf(page, ".board"))!;
+    await page.mouse.move(
+      board.x + board.width / 2,
+      board.y + board.height / 2,
+    );
+    await page.mouse.wheel({ deltaY: 300 });
+    await settle(page);
+    await tapAt(page, 'button[aria-label^="Black soldier ant"]');
+    await importRecord(page, WHITE_WINS);
+    assert.equal(await count(page, ".fit-on"), 0, "the import refits");
+    assert.equal(await text(page, ".over-title"), "White wins");
+    await press(page, "Review");
+    await importRecord(page, WHITE_WINS);
+    assert.equal(
+      await count(page, ".over-title"),
+      1,
+      "a second import of a finished game announces it again",
+    );
+    await page.close();
+  });
+
+  it("drops a selection on undo and restores an undone position after reload", async () => {
+    const page = await open();
+    await startWith(page, []);
+    await place(page, "White spider");
+    await place(page, "Black spider");
+    await tapAt(page, 'button[aria-label^="White soldier ant"]');
+    assert.ok((await count(page, ".target")) > 0);
+    await press(page, "Undo");
+    assert.equal(await count(page, ".target"), 0);
+    assert.equal(await count(page, ".hand-bug.picked"), 0);
+
+    await page.reload({ waitUntil: "networkidle0" });
+    assert.match(await text(page, ".status"), /Black to move.*Move 1 of 2/);
+    await press(page, "Redo");
+    assert.match(await text(page, ".status"), /White to move.*Turn 2/);
+    assert.deepEqual(page.errors, []);
+    await page.close();
+  });
 });
 
 describe("the phone layout", () => {

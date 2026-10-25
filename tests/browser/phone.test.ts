@@ -72,6 +72,11 @@ describe("on a phone", () => {
       for (const [side, px] of Object.entries(inset)) {
         shell.style.setProperty(`--inset-${side}`, px + "px");
       }
+      /* What (display-mode: standalone) sets on a device; Chrome cannot
+         emulate that media feature. */
+      if (Object.keys(inset).length > 0) {
+        shell.style.setProperty("--top-clear", "var(--space-4)");
+      }
     }, device.inset ?? {});
     await settle(page);
     return page;
@@ -106,6 +111,11 @@ describe("on a phone", () => {
               label: b.getAttribute("aria-label") ?? b.textContent!.trim(),
               ...box(b),
             })),
+          handRoom: [...document.querySelectorAll(".hand")].map(
+            (hand) =>
+              hand.querySelector(".hand-bug")!.getBoundingClientRect().left -
+              hand.getBoundingClientRect().left,
+          ),
           tiles: [...document.querySelectorAll(".hand-bug .tile-icon")].map(
             (t) => box(t).width,
           ),
@@ -123,6 +133,21 @@ describe("on a phone", () => {
             r.right <= device.width - inset.right + 0.5,
           `${where}: ${name} leaves the safe area: ${JSON.stringify(r)}`,
         );
+      }
+      const black = at.parts.find(([n]) => n === ".hand-b")![1];
+      if (device.inset) {
+        assert.ok(
+          black.top >= inset.top + 17,
+          `${where}: the top row sits in the status bar's blur at ${black.top}`,
+        );
+      }
+      assert.ok(
+        black.left >= inset.left + 5 &&
+          black.right <= device.width - inset.right - 5,
+        `${where}: the hands touch the screen edge`,
+      );
+      for (const room of at.handRoom) {
+        assert.ok(room >= 5, `${where}: a hand has ${room}px of inner room`);
       }
       assert.ok(at.buttons.length >= 20, `${where}: buttons were found`);
       for (const b of at.buttons) {
@@ -208,6 +233,57 @@ describe("on a phone", () => {
     }));
     assert.deepEqual(viewport, { scale: 1, scrollX: 0, scrollY: 0 });
     assert.deepEqual(page.errors, []);
+    await page.close();
+  });
+
+  it("moves a stacked beetle to any target, wherever the stack sits on the board", async () => {
+    const page = await open(
+      { name: "", width: 390, height: 844 },
+      QUEEN_COVERED,
+    );
+    const board = await centre(page, ".board");
+    await page.touchscreen.touchStart(board.x, board.y);
+    for (let i = 1; i <= 10; i++) {
+      await page.touchscreen.touchMove(board.x, board.y + i * 25);
+    }
+    await page.touchscreen.touchEnd();
+    await settle(page);
+
+    const beetle = await centre(page, '.board [aria-label^="Black beetle 1"]');
+    await page.touchscreen.tap(beetle.x, beetle.y);
+    await settle(page);
+    assert.deepEqual(
+      await page.$$eval(".stack li svg", (els) =>
+        els.map((e) => e.getAttribute("aria-label")),
+      ),
+      ["White queen bee", "Black beetle 1"],
+    );
+    const targets = await page.$$eval(".target", (ts) =>
+      ts.map((t) => {
+        const r = t.getBoundingClientRect();
+        const x = r.x + r.width / 2;
+        const y = r.y + r.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return { x, y, onBoard: !!hit?.closest(".board-svg") };
+      }),
+    );
+    assert.equal(targets.length, 6);
+    for (const t of targets) {
+      assert.ok(t.onBoard, `a target at ${t.x},${t.y} is covered`);
+    }
+    await page.touchscreen.tap(beetle.x, beetle.y);
+    await settle(page);
+    assert.equal(await page.$$eval(".stack", (s) => s.length), 0);
+    assert.equal(await page.$$eval(".target", (s) => s.length), 0);
+    await page.touchscreen.tap(beetle.x, beetle.y);
+    await settle(page);
+    const lowest = targets.reduce((a, b) => (b.y > a.y ? b : a));
+    await page.touchscreen.tap(lowest.x, lowest.y);
+    await settle(page);
+    assert.match(
+      await page.$eval(".status", (s) => s.textContent!),
+      /White to move/,
+    );
     await page.close();
   });
 

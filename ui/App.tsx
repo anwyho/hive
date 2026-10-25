@@ -19,12 +19,16 @@ export function App() {
     game.record ? "play" : "setup",
   );
   const [importing, setImporting] = useState(false);
+  /* Every started or imported game gets a fresh screen: view, selection and
+     the game-over dialog all belong to one game. */
+  const [games, setGames] = useState(0);
   const record = game.record;
 
   return (
     <div class="shell">
       {screen === "play" && record ? (
         <GameScreen
+          key={games}
           game={{ ...game, record }}
           onNewGame={() => setScreen("setup")}
           onImport={() => setImporting(true)}
@@ -35,6 +39,7 @@ export function App() {
           canResume={!!record && !game.outcome}
           onStart={(options) => {
             game.start(options);
+            setGames((n) => n + 1);
             setScreen("play");
           }}
           onResume={() => setScreen("play")}
@@ -46,6 +51,7 @@ export function App() {
           onClose={() => setImporting(false)}
           onLoad={(r) => {
             game.load(r);
+            setGames((n) => n + 1);
             setImporting(false);
             setScreen("play");
           }}

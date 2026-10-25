@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "../../vendor/hooks.module.js";
 import {
+  isLegal,
   legalMoves,
   toMove,
   type GameOptions,
@@ -72,7 +73,11 @@ export function useGame(seats: Seats) {
     canRedo: record ? canRedo(record) : false,
     start: (options: GameOptions) => setRecord(newRecord(options)),
     load: (r: GameRecord) => setRecord(r),
-    play: (move: Move) => update((r) => playMove(r, move)),
+    /* A move is legal only in the position it was chosen in. */
+    play: (move: Move) =>
+      update((r) =>
+        r === record && state && isLegal(state, move) ? playMove(r, move) : r,
+      ),
     undo: () => update(undo),
     redo: () => update(redo),
     jump: (cursor: number) => update((r) => jump(r, cursor)),

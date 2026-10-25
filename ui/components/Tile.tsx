@@ -175,19 +175,6 @@ export function TileBody({ piece, class: extra = "" }: TileProps) {
   );
 }
 
-export const MINI_FACE = polygon(19);
-
-export function MiniTile({ piece }: { piece: PieceId }) {
-  return (
-    <g class={`tile tile-${colorOf(piece)} mini`}>
-      <polygon class="tile-face" points={MINI_FACE} />
-      <g transform="translate(0 2) scale(0.44)">
-        <Glyph bug={bugOf(piece)} />
-      </g>
-    </g>
-  );
-}
-
 /* A standalone tile for the hands and the stack list. */
 export function TileIcon({
   piece,
