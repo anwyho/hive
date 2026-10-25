@@ -8,7 +8,7 @@ export type Level = (typeof LEVELS)[number];
 export const LIMITS: Readonly<Record<Level, Limits>> = {
   easy: { maxDepth: 1, maxNodes: Infinity, timeMs: 1000, noise: 150 },
   medium: { maxDepth: 3, maxNodes: 40_000, timeMs: 600, noise: 0 },
-  hard: { maxDepth: 12, maxNodes: 400_000, timeMs: 2500, noise: 0 },
+  hard: { maxDepth: 12, maxNodes: 100_000, timeMs: 2500, noise: 0 },
 };
 
 export function isLevel(value: unknown): value is Level {

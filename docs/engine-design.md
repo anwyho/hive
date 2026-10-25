@@ -66,9 +66,49 @@ gameToString(game): string                  // UHP GameString
 parseGame(str): Game
 ```
 
-AI pluggability: a future `Player` is `(state) => Promise<Move>`. The UHP
-notation lets an external UHP engine (Mzinga, nokamute WASM) drop in with no
-engine changes. Nothing in the interface assumes a human.
+AI pluggability: a computer `Player` answers `(game, state, signal)` with a
+`Promise<Move>`. The UHP notation lets an external UHP engine (Mzinga,
+nokamute WASM) drop in with no engine changes. Nothing in the interface
+assumes a human.
+
+## Computer opponent (`hive/ai/`)
+
+Built on the public interface only; `chooseMove(game, { level, seed })` is
+its one entry point. It takes the record, not a state, because the pillbug
+freeze and a pending pass are not readable from `GameState`.
+
+```mermaid
+graph LR
+  index --> difficulty --> search
+  index --> eval --> hexes
+  index --> hash
+  index --> random
+  search --> hash
+  search --> ordering --> hexes
+  search --> table
+```
+
+- `hash`: 64-bit Zobrist over (piece, cell, level), side to move, the
+  frozen piece and a pending pass. Keys are mixed, not tabled, because the
+  board is unbounded. `advance` is `play` plus the incremental update.
+- `search`: negamax, alpha-beta, principal variation windows, iterative
+  deepening, a transposition table, killers and history. Depth 1 always
+  completes; deeper iterations stop on a node cap or a clock read every 512
+  nodes, and the last complete iteration (or a better move from the
+  interrupted one) is played. It takes an `Evaluator`, not `eval`.
+- `ordering`: table move, then moves onto the enemy queen's ring, then
+  killers, history, and moves that free your own queen.
+- `eval`: queen pressure (non-linear in occupied neighbours), free versus
+  pinned or covered pieces by bug, pieces in hand, a piece on the enemy
+  queen, a pillbug by its own queen. Weights live in one table, `WEIGHTS`.
+- `difficulty`: Easy is one ply with a seeded bonus per root move, so it
+  takes a win in one but otherwise picks among near-equal moves. Medium is
+  three plies; Hard deepens to 100k nodes or 2.5 s. The node caps bind first on a fast
+  machine, which keeps a seed reproducible; the clock bounds a slow phone.
+
+`play()` is not the bottleneck: legal-move generation is (about 15k
+`legalMoves` calls a second on an M-series Mac, against 350k `play` calls),
+so there is no make/unmake path.
 
 ## Rule mechanics (single source per rule)
 
