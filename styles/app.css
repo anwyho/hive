@@ -1,0 +1,95 @@
+/* The app's own styles. Every colour, space and radius comes from the
+   design-system tokens; nothing here names a hex. */
+
+.shell {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  padding: max(env(safe-area-inset-top), var(--space-4)) var(--space-4)
+    max(env(safe-area-inset-bottom), var(--space-3));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.main h1 {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  text-align: center;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.install {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  background: var(--color-accent-2-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.install span {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.install button {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  flex: none;
+  font-size: 16px;
+  color: var(--color-accent-2-800);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.theme {
+  margin-left: auto;
+  height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-neutral-700);
+}
+
+/* The row keeps its height whether or not the offer is in it. */
+.version {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 32px;
+  font-size: 12px;
+  color: var(--color-neutral-600);
+}
+
+.version button {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--color-accent);
+  color: var(--color-neutral-100);
+}

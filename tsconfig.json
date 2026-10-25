@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
+  },
+  "include": ["hive/**/*", "ui/**/*", "pwa/**/*", "tests/**/*", "types/**/*"],
+  "exclude": [
+    "pwa/sw-runtime.ts",
+    "pwa/register.ts",
+    "pwa/theme-boot.ts",
+    "sw.ts",
+    "types/worker.d.ts",
+    "dist"
+  ]
+}

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Hive</title>
+    <meta name="description" content="Hive, the board game. Works offline." />
+    <meta name="theme-color" content="#f5ead8" />
+
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Hive" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="icons/icon-192.png"
+    />
+
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="fonts/figtree-latin.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="fonts/caprasimo-latin.woff2"
+      crossorigin
+    />
+
+    <!-- The theme has to be stamped on <html> before first paint, which rules out a
+         <script src>. tools/inline.mjs injects the compiled pwa/theme-boot.js here. -->
+    <script data-theme-boot></script>
+
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/base.css" />
+    <link rel="stylesheet" href="styles/app.css" />
+
+    <!-- Registration runs during parse, so the worker is already being checked
+         while the module graph is still loading. -->
+    <script src="pwa/register.js"></script>
+    <script type="module" src="ui/main.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
