@@ -240,10 +240,12 @@ describe("on a phone", () => {
       { name: "", width: 390, height: 844 },
       QUEEN_COVERED,
     );
+    /* The fit already sits the hive below the last-moves line, so a shorter
+       pan reaches the same low spot on the board. */
     const board = await centre(page, ".board");
     await page.touchscreen.touchStart(board.x, board.y);
     for (let i = 1; i <= 10; i++) {
-      await page.touchscreen.touchMove(board.x, board.y + i * 25);
+      await page.touchscreen.touchMove(board.x, board.y + i * 20);
     }
     await page.touchscreen.touchEnd();
     await settle(page);
