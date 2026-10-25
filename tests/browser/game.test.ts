@@ -158,7 +158,7 @@ describe("playing a game", () => {
     assert.equal(await count(page, ".last-from"), 1);
     assert.notDeepEqual(await centreOf(page, mover), before);
     const stored = await page.evaluate(() => localStorage.getItem("hive.game"));
-    assert.equal(JSON.parse(stored!).v, 1);
+    assert.equal(JSON.parse(stored!).v, 2);
     assert.deepEqual(page.errors, []);
     await page.close();
   });

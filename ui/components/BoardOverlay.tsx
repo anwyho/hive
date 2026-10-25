@@ -5,6 +5,7 @@ import { TileIcon } from "./Tile.js";
 
 interface Props {
   status: string;
+  busy?: boolean;
   detail: string;
   stack: readonly PieceId[];
   notice: { text: string; n: number } | null;
@@ -16,6 +17,7 @@ interface Props {
    and offers along the bottom edge. Only the offers take taps. */
 export function BoardOverlay({
   status,
+  busy = false,
   detail,
   stack,
   notice,
@@ -24,7 +26,8 @@ export function BoardOverlay({
 }: Props) {
   return (
     <>
-      <div class="status" aria-live="polite">
+      <div class="status" aria-live="polite" aria-busy={busy}>
+        {busy ? <span class="thinking" aria-hidden="true" /> : null}
         <strong>{status}</strong>
         <span>{detail}</span>
       </div>

@@ -17,11 +17,20 @@ import {
   outcomeAt,
   playMove,
   redo,
+  redoTurn,
   retract,
   statesOf,
   undo,
+  undoTurn,
   type GameRecord,
 } from "../ui/record.js";
+import {
+  HOT_SEAT,
+  isHuman,
+  opponentOf,
+  seatsFor,
+  type SeatConfig,
+} from "../ui/players.js";
 import { parseStored, serialize } from "../ui/storage.js";
 import { FORCED_PASS, MID_GAME, WHITE_WINS } from "./support/games.js";
 
@@ -159,29 +168,67 @@ describe("importing a game string", () => {
   });
 });
 
+const saved = (record: GameRecord, seats: SeatConfig = HOT_SEAT) => ({
+  record,
+  seats,
+});
+
 describe("stored games", () => {
-  it("round-trip with the cursor, ending and options", () => {
+  it("round-trip with the cursor, ending, options and seats", () => {
     const r = end(undo(recordOf(MID_GAME)), { kind: "resigned", by: "w" });
-    const back = parseStored(serialize(r));
-    assert.deepEqual(back, r);
+    assert.deepEqual(parseStored(serialize(saved(r))), saved(r));
     const loose = { ...r, options: { ...r.options, tournamentOpening: false } };
-    assert.deepEqual(parseStored(serialize(loose))?.options, loose.options);
+    assert.deepEqual(
+      parseStored(serialize(saved(loose)))?.record.options,
+      loose.options,
+    );
+    const vsComputer = saved(r, { w: "human", b: "hard" });
+    assert.deepEqual(parseStored(serialize(vsComputer)), vsComputer);
   });
 
   it("store the moves as a UHP game string", () => {
     const r = recordOf(MID_GAME);
-    assert.equal(JSON.parse(serialize(r)).game, gameToString(r));
+    assert.equal(JSON.parse(serialize(saved(r))).game, gameToString(r));
+  });
+
+  it("read a version 1 save as hot-seat", () => {
+    const v2 = JSON.parse(
+      serialize(saved(recordOf(MID_GAME), { w: "easy", b: "human" })),
+    );
+    const { seats: _, ...v1 } = { ...v2, v: 1 };
+    const back = parseStored(JSON.stringify(v1));
+    assert.deepEqual(back?.seats, HOT_SEAT);
+    assert.equal(back?.record.cursor, 22);
+    assert.deepEqual(
+      parseStored(JSON.stringify({ ...v2, v: 1 }))?.seats,
+      HOT_SEAT,
+    );
+  });
+
+  it("fall back to hot-seat for seats it cannot read", () => {
+    const good = JSON.parse(serialize(saved(recordOf(MID_GAME))));
+    for (const seats of [
+      null,
+      "hard",
+      { w: "human" },
+      { w: "x", b: "human" },
+    ]) {
+      assert.deepEqual(
+        parseStored(JSON.stringify({ ...good, seats }))?.seats,
+        HOT_SEAT,
+      );
+    }
   });
 
   it("reject anything malformed, from an unknown version, or illegal", () => {
-    const good = JSON.parse(serialize(recordOf(MID_GAME)));
+    const good = JSON.parse(serialize(saved(recordOf(MID_GAME))));
     for (const bad of [
       null,
       "",
       "{",
       "[]",
       "42",
-      JSON.stringify({ ...good, v: 2 }),
+      JSON.stringify({ ...good, v: 3 }),
       JSON.stringify({ ...good, game: 7 }),
       JSON.stringify({ ...good, game: "Base;InProgress;White[1];wQ" }),
     ]) {
@@ -190,18 +237,85 @@ describe("stored games", () => {
   });
 
   it("repair a bad cursor or ending instead of dropping the game", () => {
-    const good = JSON.parse(serialize(recordOf(MID_GAME)));
+    const good = JSON.parse(serialize(saved(recordOf(MID_GAME))));
     for (const cursor of [-1, 1.5, 99, "3", null]) {
       assert.equal(
-        parseStored(JSON.stringify({ ...good, cursor }))?.cursor,
+        parseStored(JSON.stringify({ ...good, cursor }))?.record.cursor,
         22,
       );
     }
     for (const ending of [{ kind: "resigned", by: "x" }, "agreed", 3]) {
       assert.equal(
-        parseStored(JSON.stringify({ ...good, ending }))?.ending,
+        parseStored(JSON.stringify({ ...good, ending }))?.record.ending,
         null,
       );
     }
+  });
+});
+
+describe("turns against the computer", () => {
+  const whiteHuman: SeatConfig = { w: "human", b: "easy" };
+  const humanAt = (c: number) => isHuman(whiteHuman, c);
+
+  it("undo takes back the computer's reply and the move before it", () => {
+    const r = recordOf(MID_GAME);
+    assert.equal(r.cursor, 22);
+    assert.equal(undoTurn(r, humanAt).cursor, 20);
+    assert.equal(undoTurn(jump(r, 21), humanAt).cursor, 20);
+    assert.equal(redoTurn(jump(r, 20), humanAt).cursor, 22);
+    assert.equal(redoTurn(jump(r, 21), humanAt).cursor, 22);
+  });
+
+  it("cannot undo past the first position a person moves in", () => {
+    const blackHuman: SeatConfig = { w: "easy", b: "human" };
+    const r = jump(recordOf(MID_GAME), 1);
+    assert.equal(
+      undoTurn(r, (c) => isHuman(blackHuman, c)),
+      r,
+    );
+  });
+
+  it("retract against the computer takes back both plies", () => {
+    const r = recordOf(MID_GAME);
+    assert.equal(retract(r, humanAt).cursor, 20);
+  });
+
+  it("step one ply at a time in hot-seat", () => {
+    const r = recordOf(MID_GAME);
+    const always = (c: number) => isHuman(HOT_SEAT, c);
+    assert.deepEqual(undoTurn(r, always), undo(r));
+    assert.deepEqual(redoTurn(jump(r, 3), always), redo(jump(r, 3)));
+  });
+});
+
+describe("opponent choice", () => {
+  it("seats the person on the chosen side, or either side at random", () => {
+    const o = { kind: "computer", level: "hard", side: "b" } as const;
+    assert.deepEqual(
+      seatsFor(o, () => 0),
+      { w: "hard", b: "human" },
+    );
+    const random = { ...o, side: "random" } as const;
+    assert.deepEqual(
+      seatsFor(random, () => 0.1),
+      { w: "human", b: "hard" },
+    );
+    assert.deepEqual(
+      seatsFor(random, () => 0.9),
+      { w: "hard", b: "human" },
+    );
+    assert.deepEqual(
+      seatsFor({ ...o, kind: "human" }, () => 0),
+      HOT_SEAT,
+    );
+  });
+
+  it("reads a saved seating back as the choice that made it", () => {
+    assert.deepEqual(opponentOf({ w: "hard", b: "human" }), {
+      kind: "computer",
+      level: "hard",
+      side: "b",
+    });
+    assert.equal(opponentOf(HOT_SEAT).kind, "human");
   });
 });

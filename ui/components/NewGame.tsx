@@ -8,7 +8,9 @@ import {
 import { polygon } from "../geometry.js";
 import { useInstallHint } from "../hooks/useInstallHint.js";
 import { Help } from "./Help.js";
+import { opponentOf, seatsFor, type SeatConfig } from "../players.js";
 import { InstallHint } from "./InstallHint.js";
+import { OpponentPicker } from "./OpponentPicker.js";
 import { Switch } from "./Switch.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 import { TileBody, TileIcon } from "./Tile.js";
@@ -16,8 +18,9 @@ import { UpdateRow } from "./UpdateRow.js";
 
 interface Props {
   initial: GameOptions;
+  initialSeats: SeatConfig;
   canResume: boolean;
-  onStart(options: GameOptions): void;
+  onStart(options: GameOptions, seats: SeatConfig): void;
   onResume(): void;
   onImport(): void;
 }
@@ -60,6 +63,7 @@ const CLUSTER: readonly [string, number, number][] = [
 
 export function NewGame({
   initial,
+  initialSeats,
   canResume,
   onStart,
   onResume,
@@ -69,6 +73,7 @@ export function NewGame({
   const [tournament, setTournament] = useState(initial.tournamentOpening);
   const install = useInstallHint();
   const [help, setHelp] = useState(false);
+  const [opponent, setOpponent] = useState(() => opponentOf(initialSeats));
 
   return (
     <div class="setup">
@@ -97,6 +102,8 @@ export function NewGame({
       </header>
 
       <section class="setup-card" aria-label="Game options">
+        <h2>Opponent</h2>
+        <OpponentPicker value={opponent} onChange={setOpponent} />
         <h2>Expansions</h2>
         {EXPANSIONS.map((x) => (
           <Switch
@@ -126,7 +133,12 @@ export function NewGame({
         ) : null}
         <button
           class={canResume ? "btn" : "btn btn-primary"}
-          onClick={() => onStart({ expansions, tournamentOpening: tournament })}
+          onClick={() =>
+            onStart(
+              { expansions, tournamentOpening: tournament },
+              seatsFor(opponent, Math.random),
+            )
+          }
         >
           Start game
         </button>

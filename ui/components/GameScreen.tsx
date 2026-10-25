@@ -122,6 +122,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
   };
 
   const pickBug = (color: Color, bug: Bug) => {
+    if (game.thinking) return;
     setHeld(null);
     const current = pick.selection;
     if (current?.kind === "hand" && bugOf(current.piece) === bug) {
@@ -189,8 +190,15 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
         />
         <BoardOverlay
           status={
-            outcome ? outcomeTitle(outcome) : `${colorName(turn)} to move`
+            outcome
+              ? outcomeTitle(outcome)
+              : game.thinking
+                ? "Computer is thinking"
+                : game.stuck
+                  ? "The computer could not move"
+                  : `${colorName(turn)} to move`
           }
+          busy={game.thinking}
           detail={
             game.reviewing
               ? `Move ${ply} of ${record.moves.length}`
@@ -238,7 +246,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
 
       {menu ? (
         <MenuSheet
-          turn={outcome ? null : turn}
+          turn={outcome ? null : (game.human ?? turn)}
           onClose={() => setMenu(false)}
           onNewGame={onNewGame}
           onCopy={copy}
@@ -252,7 +260,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
           }}
           onResign={() => {
             setMenu(false);
-            game.end({ kind: "resigned", by: turn });
+            game.end({ kind: "resigned", by: game.human ?? turn });
           }}
         />
       ) : null}

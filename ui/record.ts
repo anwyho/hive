@@ -69,13 +69,38 @@ export function jump(record: GameRecord, cursor: number): GameRecord {
 export const undo = (record: GameRecord) => jump(record, record.cursor - 1);
 export const redo = (record: GameRecord) => jump(record, record.cursor + 1);
 
+/* Against the computer a step lands only on a position where a person is to
+   move, so one undo takes back the computer's reply and the move before it.
+   `humanAt(cursor)` says whether a person moves after `cursor` moves. */
+export function undoTurn(
+  record: GameRecord,
+  humanAt: (cursor: number) => boolean,
+): GameRecord {
+  for (let c = record.cursor - 1; c >= 0; c--) {
+    if (humanAt(c)) return jump(record, c);
+  }
+  return record;
+}
+
+export function redoTurn(
+  record: GameRecord,
+  humanAt: (cursor: number) => boolean,
+): GameRecord {
+  let c = record.cursor + 1;
+  while (c < record.moves.length && !humanAt(c)) c++;
+  return jump(record, c);
+}
+
 /* "Undo last move" from the game-over screen: a resignation or agreed draw is
    the last thing that happened, so it goes before any engine move does. */
-export function retract(record: GameRecord): GameRecord {
+export function retract(
+  record: GameRecord,
+  humanAt: (cursor: number) => boolean = () => true,
+): GameRecord {
   if (record.ending !== null && atEnd(record)) {
     return { ...record, ending: null };
   }
-  return undo(record);
+  return undoTurn(record, humanAt);
 }
 
 export function end(record: GameRecord, ending: Ending): GameRecord {

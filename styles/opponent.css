@@ -1,0 +1,66 @@
+/* ---- Opponent choice and the computer's turn ---- */
+
+.opponent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.opponent-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.opponent-label {
+  font-weight: 650;
+  font-size: 14px;
+}
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--color-neutral-200);
+  box-shadow: inset 0 0 0 1px var(--color-divider);
+}
+
+.segmented > button {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  font-weight: 650;
+  font-size: 14px;
+  color: var(--color-neutral-700);
+}
+
+.segmented > button[aria-checked="true"] {
+  background: var(--color-accent);
+  color: var(--color-neutral-100);
+  box-shadow: var(--shadow-sm);
+}
+
+.status .thinking {
+  flex: none;
+  align-self: center;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  animation: thinking 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes thinking {
+  from {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

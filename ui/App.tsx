@@ -5,7 +5,6 @@ import { GameScreen } from "./components/GameScreen.js";
 import { NewGame } from "./components/NewGame.js";
 import { Sheet } from "./components/Sheet.js";
 import { useGame } from "./hooks/useGame.js";
-import { HOT_SEAT } from "./players.js";
 import { importGame, type GameRecord } from "./record.js";
 
 const DEFAULTS: GameOptions = {
@@ -14,7 +13,7 @@ const DEFAULTS: GameOptions = {
 };
 
 export function App() {
-  const game = useGame(HOT_SEAT);
+  const game = useGame();
   const [screen, setScreen] = useState<"setup" | "play">(
     game.record ? "play" : "setup",
   );
@@ -36,9 +35,10 @@ export function App() {
       ) : (
         <NewGame
           initial={record?.options ?? DEFAULTS}
+          initialSeats={game.seats}
           canResume={!!record && !game.outcome}
-          onStart={(options) => {
-            game.start(options);
+          onStart={(options, seats) => {
+            game.start(options, seats);
             setGames((n) => n + 1);
             setScreen("play");
           }}
