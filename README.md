@@ -40,7 +40,7 @@ pwa/                the reusable shell — see pwa/README.md and pwa/AGENTS.md
 hive/               the game engine: pure TypeScript, no DOM
 ui/                 App.tsx, components/, hooks/ (Preact, classic JSX runtime), and
                     the pure modules they share: geometry, record, storage, selection, players
-styles/             tokens.css + base.css + app.css
+styles/             tokens.css + pieces.css (tile and bug colours) + base.css + app.css
 vendor/             Preact 10 + hooks, as ES modules; hand-written .d.ts beside each
 types/              ambient types: the JSX namespace, shell globals, the worker scope
 fonts/ icons/       Caprasimo + Figtree (latin subset); the .svg are the .png sources

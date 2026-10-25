@@ -5,7 +5,12 @@ import {
   useRef,
   useState,
 } from "../../vendor/hooks.module.js";
-import { occupied, type GameState, type Hex } from "../../hive/index.js";
+import {
+  occupied,
+  toMove,
+  type GameState,
+  type Hex,
+} from "../../hive/index.js";
 import {
   boundsOf,
   fit,
@@ -20,8 +25,8 @@ import {
 } from "../geometry.js";
 import { usePanZoom } from "../hooks/usePanZoom.js";
 import type { LastMove } from "../record.js";
-import { pieceName } from "../selection.js";
-import { TileBody } from "./Tile.js";
+import { stackLabel, stackMarks } from "../selection.js";
+import { MiniTile, TileBody } from "./Tile.js";
 
 interface Props {
   state: GameState;
@@ -36,6 +41,7 @@ interface Props {
    one circumradius. */
 const TILE = 0.02;
 const LIFT = 6;
+const PEEK = 7;
 const MARGIN = 14;
 const OUTLINE = polygon(44);
 const MARK = polygon(38);
@@ -84,6 +90,11 @@ export function Board({
   });
 
   const selectedKey = selected ? hexKey(selected) : null;
+  const turn = toMove(state);
+  const under = (hex: Hex, depth: number) => {
+    const p = hexToPoint(hex);
+    return `translate(${p.x} ${p.y}) scale(${TILE}) translate(${-PEEK * depth} ${PEEK * depth})`;
+  };
   const at = (hex: Hex, lift = 0) => {
     const p = hexToPoint(hex);
     return `translate(${p.x} ${p.y}) scale(${TILE}) translate(0 ${-lift})`;
@@ -110,51 +121,40 @@ export function Board({
           ) : null}
           {cells.map(([hex, stack]) => {
             const key = hexKey(hex);
-            const lifted = key === selectedKey ? LIFT : 0;
             return (
               <g key={key}>
-                {stack.map((piece, level) => (
+                {stack.slice(0, -1).map((piece, level) => (
                   <g
                     key={piece}
-                    transform={at(
-                      hex,
-                      level * LIFT + (level === stack.length - 1 ? lifted : 0),
-                    )}
-                    aria-label={
-                      level === stack.length - 1 ? pieceName(piece) : undefined
-                    }
-                    role={level === stack.length - 1 ? "img" : undefined}
+                    transform={under(hex, stack.length - 1 - level)}
                   >
-                    <TileBody
-                      piece={piece}
-                      class={
-                        level < stack.length - 1
-                          ? "under"
-                          : key === selectedKey
-                            ? "selected"
-                            : ""
-                      }
-                    />
+                    <TileBody piece={piece} class="under" />
                   </g>
                 ))}
+                <g
+                  transform={at(hex, key === selectedKey ? LIFT : 0)}
+                  aria-label={stackLabel(stack)}
+                  role="img"
+                >
+                  <TileBody
+                    piece={stack.at(-1)!}
+                    class={key === selectedKey ? "selected" : ""}
+                  />
+                </g>
               </g>
             );
           })}
           {last ? (
-            <polygon
-              class="last-to"
-              points={OUTLINE}
-              transform={at(last.to, (stackHeight(cells, last.to) - 1) * LIFT)}
-            />
+            <polygon class="last-to" points={OUTLINE} transform={at(last.to)} />
           ) : null}
           {targets.map((hex) => {
-            const height = stackHeight(cells, hex);
+            const climb = stackHeight(cells, hex) > 0;
             return (
               <g
                 key={"t" + hexKey(hex)}
-                class={height > 0 ? "target target-climb" : "target"}
-                transform={at(hex, height * LIFT)}
-                aria-label={height > 0 ? "Climb here" : "Play here"}
+                class={climb ? "target target-climb" : "target"}
+                transform={at(hex)}
+                aria-label={climb ? "Climb here" : "Play here"}
                 role="button"
               >
                 <polygon points={MARK} />
@@ -162,21 +162,46 @@ export function Board({
               </g>
             );
           })}
-          {cells.map(([hex, stack]) =>
-            stack.length > 1 ? (
+          {cells.map(([hex, stack]) => {
+            if (stack.length < 2) return null;
+            const marks = stackMarks(stack, turn);
+            const lift = hexKey(hex) === selectedKey ? LIFT : 0;
+            return (
               <g
-                key={"h" + hexKey(hex)}
-                class="tile-badge"
+                key={"s" + hexKey(hex)}
+                transform={at(hex, lift)}
                 aria-hidden="true"
-                transform={`${at(hex, (stack.length - 1) * LIFT + (hexKey(hex) === selectedKey ? LIFT : 0))} translate(26 -28)`}
               >
-                <circle r="17" />
-                <text y="7" text-anchor="middle">
-                  {stack.length}
-                </text>
+                {marks.buriedQueens.length > 0 ? (
+                  <polygon
+                    class={
+                      marks.threat
+                        ? "buried-queen buried-threat"
+                        : "buried-queen"
+                    }
+                    points={OUTLINE}
+                  />
+                ) : null}
+                {marks.beneath ? (
+                  <g class="beneath" transform="translate(-25 23)">
+                    <MiniTile piece={marks.beneath} />
+                  </g>
+                ) : null}
+                {marks.buriedQueens.length > 0 ? (
+                  <g class="crown-mark" transform="translate(-27 -27)">
+                    <circle r="15" />
+                    <path d="M-9 5L-11 -8L-4.5 -2L0 -10L4.5 -2L11 -8L9 5Z" />
+                  </g>
+                ) : null}
+                <g class="tile-badge" transform="translate(27 -27)">
+                  <circle r="15" />
+                  <text y="7" text-anchor="middle">
+                    {stack.length}
+                  </text>
+                </g>
               </g>
-            ) : null,
-          )}
+            );
+          })}
         </g>
       </svg>
       <button

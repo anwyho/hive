@@ -37,12 +37,15 @@ const GLYPHS: Readonly<Record<Bug, () => JSX.Element>> = {
     <g>
       <path
         class="line"
-        d="M-14 -4L-26 -10M-15 8L-28 8M-13 20L-24 30M14 -4L26 -10M15 8L28 8M13 20L24 30"
+        d="M-15 0L-28 -6M-16 10L-30 12M-14 20L-25 31M15 0L28 -6M16 10L30 12M14 20L25 31"
       />
-      <path class="line" d="M-5 -24L-9 -33M5 -24L9 -33" />
-      <circle class="fill" cx="0" cy="-17" r="8" />
-      <ellipse class="fill" cx="0" cy="8" rx="17" ry="21" />
-      <path class="cut-line" d="M0 -9V27" />
+      <path
+        class="line"
+        d="M-6 -24C-14 -30 -14 -38 -6 -42M6 -24C14 -30 14 -38 6 -42"
+      />
+      <rect class="fill" x="-9" y="-26" width="18" height="12" rx="5" />
+      <ellipse class="fill" cx="0" cy="10" rx="19" ry="23" />
+      <path class="cut-line" d="M0 -10V31M-19 -4H19" />
     </g>
   ),
   G: () => (
@@ -89,48 +92,52 @@ const GLYPHS: Readonly<Record<Bug, () => JSX.Element>> = {
     <g>
       <ellipse
         class="wing"
-        cx="-13"
-        cy="-4"
-        rx="16"
-        ry="5.5"
-        transform="rotate(-35 -13 -4)"
+        cx="-15"
+        cy="-6"
+        rx="19"
+        ry="7.5"
+        transform="rotate(-32 -15 -6)"
       />
       <ellipse
         class="wing"
-        cx="13"
-        cy="-4"
-        rx="16"
-        ry="5.5"
-        transform="rotate(35 13 -4)"
+        cx="15"
+        cy="-6"
+        rx="19"
+        ry="7.5"
+        transform="rotate(32 15 -6)"
       />
-      <path class="line thin" d="M0 -18V-38" />
+      <path class="line" d="M0 -18V-42" />
       <path
         class="line thin"
-        d="M-3 2L-22 12L-30 32M-3 6L-12 22L-14 38M3 2L22 12L30 32M3 6L12 22L14 38"
+        d="M-3 4L-24 14L-32 34M-3 8L-12 24L-14 40M3 4L24 14L32 34M3 8L12 24L14 40"
       />
-      <circle class="fill" cx="0" cy="-13" r="6" />
-      <ellipse class="fill" cx="0" cy="12" rx="5" ry="17" />
+      <circle class="fill" cx="0" cy="-14" r="6.5" />
+      <ellipse class="fill" cx="0" cy="12" rx="5.5" ry="18" />
     </g>
   ),
   L: () => (
     <g>
-      <path class="line" d="M-4 -26L-10 -34M4 -26L10 -34" />
+      <path class="line" d="M-4 -26L-10 -35M4 -26L10 -35" />
       <circle class="fill" cx="0" cy="-18" r="9" />
-      <circle class="fill" cx="0" cy="6" r="22" />
-      <path class="cut-line" d="M0 -16V28" />
-      <circle class="cut" cx="-10" cy="-3" r="4" />
-      <circle class="cut" cx="10" cy="-3" r="4" />
-      <circle class="cut" cx="-12" cy="13" r="4" />
-      <circle class="cut" cx="12" cy="13" r="4" />
+      <circle class="fill" cx="0" cy="7" r="23" />
+      <path class="cut-line" d="M0 -16V30" />
+      <circle class="cut" cx="-11" cy="-3" r="5" />
+      <circle class="cut" cx="11" cy="-3" r="5" />
+      <circle class="cut" cx="-12" cy="15" r="5" />
+      <circle class="cut" cx="12" cy="15" r="5" />
     </g>
   ),
   P: () => (
     <g>
-      <path class="line" d="M-5 -26L-13 -34M5 -26L13 -34" />
-      <ellipse class="fill" cx="0" cy="4" rx="18" ry="28" />
+      <path class="line" d="M-6 -28L-14 -37M6 -28L14 -37" />
+      <path
+        class="line thin"
+        d="M-20 -10H-28M-21 0H-30M-21 10H-30M-20 20H-28M20 -10H28M21 0H30M21 10H30M20 20H28"
+      />
+      <ellipse class="fill" cx="0" cy="4" rx="21" ry="30" />
       <path
         class="cut-line"
-        d="M-16 -12Q0 -6 16 -12M-18 -1Q0 5 18 -1M-18 10Q0 16 18 10M-16 21Q0 27 16 21"
+        d="M-17 -14Q0 -7 17 -14M-20 -3Q0 4 20 -3M-20 8Q0 15 20 8M-18 19Q0 26 18 19"
       />
     </g>
   ),
@@ -164,6 +171,19 @@ export function TileBody({ piece, class: extra = "" }: TileProps) {
       <text class="tile-letter" x="0" y="35" text-anchor="middle">
         {bug}
       </text>
+    </g>
+  );
+}
+
+export const MINI_FACE = polygon(19);
+
+export function MiniTile({ piece }: { piece: PieceId }) {
+  return (
+    <g class={`tile tile-${colorOf(piece)} mini`}>
+      <polygon class="tile-face" points={MINI_FACE} />
+      <g transform="translate(0 2) scale(0.44)">
+        <Glyph bug={bugOf(piece)} />
+      </g>
     </g>
   );
 }

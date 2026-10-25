@@ -17,11 +17,19 @@ import {
   kindsInGame,
   moveFor,
   pieceName,
+  queenCovered,
   queenPressure,
   selectBoard,
   selectHand,
+  stackLabel,
+  stackMarks,
 } from "../ui/selection.js";
-import { MID_GAME, WHITE_WINS } from "./support/games.js";
+import {
+  MID_GAME,
+  QUEEN_COVERED,
+  TALL_STACK,
+  WHITE_WINS,
+} from "./support/games.js";
 
 const stateOf = (text: string): GameState => {
   const g = parseGame(text);
@@ -156,5 +164,45 @@ describe("display helpers", () => {
   it("name pieces for people", () => {
     assert.equal(pieceName(parsePieceId("bA2")), "Black soldier ant 2");
     assert.equal(pieceName(parsePieceId("wQ")), "White queen bee");
+  });
+});
+
+describe("stacks", () => {
+  const ids = (...p: string[]) => p.map(parsePieceId);
+
+  it("name the piece directly beneath and every buried queen", () => {
+    assert.deepEqual(stackMarks(ids("bS1", "bB1", "bM"), "w"), {
+      beneath: "bB1",
+      buriedQueens: [],
+      threat: false,
+    });
+    assert.deepEqual(stackMarks(ids("wQ"), "w"), {
+      beneath: null,
+      buriedQueens: [],
+      threat: false,
+    });
+  });
+
+  it("call a buried queen a threat only when she is the opponent's", () => {
+    assert.equal(stackMarks(ids("wQ", "bB1"), "b").threat, true);
+    assert.equal(stackMarks(ids("wQ", "bB1"), "w").threat, false);
+    assert.deepEqual(stackMarks(ids("wQ", "bB1"), "w").buriedQueens, ["w"]);
+  });
+
+  it("describe a stack from the top down", () => {
+    assert.equal(
+      stackLabel(ids("bS1", "bB1", "bM")),
+      "Black mosquito, covering Black beetle 1, then Black spider 1",
+    );
+    assert.equal(stackLabel(ids("wQ")), "White queen bee");
+  });
+
+  it("track a covered queen's danger the same as an open one", () => {
+    const s = stateOf(QUEEN_COVERED);
+    assert.equal(queenCovered(s, "w"), true);
+    assert.equal(queenCovered(s, "b"), false);
+    assert.equal(typeof queenPressure(s, "w"), "number");
+    assert.equal(queenCovered(stateOf(TALL_STACK), "w"), false);
+    assert.equal(queenCovered(newGame(), "w"), false);
   });
 });

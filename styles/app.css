@@ -1,33 +1,14 @@
 /* The app's own styles. Every colour, space and radius comes from the
    design-system tokens; nothing here names a hex. */
 
-/* Piece colours are absolute: a white tile stays light in the dark theme. The
-   ramps run end-for-end there, so the dark block picks the opposite steps. */
-:root {
-  --piece-w: var(--color-neutral-100);
-  --piece-w-rim: var(--color-neutral-100);
-  --piece-w-ink: var(--color-neutral-900);
-  --piece-w-queen: var(--color-accent-600);
-  --piece-b: var(--color-neutral-900);
-  --piece-b-rim: var(--color-neutral-900);
-  --piece-b-ink: var(--color-neutral-200);
-  --piece-b-queen: var(--color-accent-400);
-  --board-bg: var(--color-surface);
-}
-
-:root[data-theme="dark"] {
-  --piece-w: var(--color-neutral-900);
-  --piece-w-rim: var(--color-neutral-900);
-  --piece-w-ink: var(--color-neutral-100);
-  --piece-w-queen: var(--color-accent-400);
-  --piece-b: var(--color-neutral-300);
-  --piece-b-rim: var(--color-neutral-500);
-  --piece-b-ink: var(--color-neutral-800);
-  --piece-b-queen: var(--color-accent-700);
-  --board-bg: var(--color-neutral-100);
-}
-
 .shell {
+  /* Read into properties of their own so a test can stand in for a device:
+     the insets are zero in every browser a test opens. */
+  --inset-top: env(safe-area-inset-top);
+  --inset-right: env(safe-area-inset-right);
+  --inset-bottom: env(safe-area-inset-bottom);
+  --inset-left: env(safe-area-inset-left);
+
   height: 100%;
   overflow: hidden;
   background: var(--color-bg);
@@ -77,15 +58,15 @@ h2 {
 }
 
 .btn-small {
-  min-height: 36px;
+  min-height: 44px;
   font-size: 13px;
   box-shadow: var(--shadow-md);
   background: var(--color-neutral-100);
 }
 
 .icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border-radius: 999px;
   display: grid;
@@ -107,14 +88,28 @@ h2 {
   --face: var(--piece-w);
   --rim: var(--piece-w-rim);
   --ink: var(--piece-w-ink);
-  --queen: var(--piece-w-queen);
+  --bug-Q: var(--bug-q-on-light);
+  --bug-B: var(--bug-b-on-light);
+  --bug-G: var(--bug-g-on-light);
+  --bug-S: var(--bug-s-on-light);
+  --bug-A: var(--bug-a-on-light);
+  --bug-M: var(--bug-m-on-light);
+  --bug-L: var(--bug-l-on-light);
+  --bug-P: var(--bug-p-on-light);
 }
 
 .tile-b {
   --face: var(--piece-b);
   --rim: var(--piece-b-rim);
   --ink: var(--piece-b-ink);
-  --queen: var(--piece-b-queen);
+  --bug-Q: var(--bug-q-on-dark);
+  --bug-B: var(--bug-b-on-dark);
+  --bug-G: var(--bug-g-on-dark);
+  --bug-S: var(--bug-s-on-dark);
+  --bug-A: var(--bug-a-on-dark);
+  --bug-M: var(--bug-m-on-dark);
+  --bug-L: var(--bug-l-on-dark);
+  --bug-P: var(--bug-p-on-dark);
 }
 
 .tile-face,
@@ -133,12 +128,36 @@ h2 {
   stroke: color-mix(in srgb, var(--rim) 62%, var(--piece-w-ink));
 }
 
-.glyph {
-  color: var(--ink);
+.glyph-Q {
+  color: var(--bug-Q);
 }
 
-.glyph-Q {
-  color: var(--queen);
+.glyph-B {
+  color: var(--bug-B);
+}
+
+.glyph-G {
+  color: var(--bug-G);
+}
+
+.glyph-S {
+  color: var(--bug-S);
+}
+
+.glyph-A {
+  color: var(--bug-A);
+}
+
+.glyph-M {
+  color: var(--bug-M);
+}
+
+.glyph-L {
+  color: var(--bug-L);
+}
+
+.glyph-P {
+  color: var(--bug-P);
 }
 
 .glyph .fill {
@@ -148,13 +167,13 @@ h2 {
 .glyph .line {
   fill: none;
   stroke: currentColor;
-  stroke-width: 5;
+  stroke-width: 5.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .glyph .thin {
-  stroke-width: 3;
+  stroke-width: 3.5;
 }
 
 .glyph .wing {
@@ -195,6 +214,45 @@ h2 {
   font-weight: 800;
 }
 
+.mini .tile-face {
+  stroke: var(--board-bg);
+  stroke-width: 3;
+}
+
+.beneath > .tile {
+  filter: drop-shadow(
+    0 1px 0.5px color-mix(in srgb, var(--piece-w-ink) 45%, transparent)
+  );
+}
+
+.buried-queen {
+  fill: none;
+  stroke: var(--queen-mark);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+.buried-threat {
+  stroke-width: 9;
+  animation: throb 1.6s ease-in-out infinite;
+}
+
+.crown-mark circle {
+  fill: var(--queen-mark);
+  stroke: var(--board-bg);
+  stroke-width: 3;
+}
+
+.crown-mark path {
+  fill: var(--queen-mark-ink);
+}
+
+@keyframes throb {
+  50% {
+    stroke-opacity: 0.45;
+  }
+}
+
 .tile.selected .tile-face {
   stroke: var(--color-accent);
 }
@@ -213,10 +271,10 @@ h2 {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  padding: max(env(safe-area-inset-top), var(--space-4))
-    max(env(safe-area-inset-right), var(--space-4))
-    max(env(safe-area-inset-bottom), var(--space-4))
-    max(env(safe-area-inset-left), var(--space-4));
+  padding: max(var(--inset-top), var(--space-4))
+    max(var(--inset-right), var(--space-4))
+    max(var(--inset-bottom), var(--space-4))
+    max(var(--inset-left), var(--space-4));
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
@@ -359,8 +417,8 @@ h2 {
 }
 
 .install button {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   flex: none;
   font-size: 16px;
@@ -393,13 +451,13 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  min-height: 32px;
+  min-height: 44px;
   font-size: 12px;
   color: var(--color-neutral-600);
 }
 
 .version button {
-  height: 32px;
+  height: 44px;
   padding: 0 var(--space-3);
   border-radius: 999px;
   font-size: 12px;
@@ -417,10 +475,8 @@ h2 {
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   grid-template-areas: "black" "board" "white" "controls";
   gap: var(--space-1);
-  padding: max(env(safe-area-inset-top), var(--space-2))
-    max(env(safe-area-inset-right), var(--space-2))
-    max(env(safe-area-inset-bottom), var(--space-1))
-    max(env(safe-area-inset-left), var(--space-2));
+  padding: max(var(--inset-top), var(--space-1)) max(var(--inset-right), 4px)
+    max(var(--inset-bottom), var(--space-1)) max(var(--inset-left), 4px);
 }
 
 .area-black {
@@ -524,7 +580,7 @@ h2 {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  height: 36px;
+  height: 44px;
   padding: 0 var(--space-3) 0 var(--space-2);
   border-radius: 999px;
   display: flex;
@@ -654,7 +710,7 @@ h2 {
 
 .hand {
   border-radius: var(--radius-md);
-  padding: var(--space-1) var(--space-2);
+  padding: 2px 3px;
   box-shadow: inset 0 0 0 1.5px transparent;
   transition:
     background 0.2s,
@@ -716,6 +772,16 @@ h2 {
   background: var(--color-accent);
 }
 
+.meter-flag {
+  margin-right: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--queen-mark);
+  color: var(--queen-mark-ink);
+}
+
 .meter-text {
   margin-left: var(--space-1);
   font-size: 12px;
@@ -725,8 +791,8 @@ h2 {
 
 .hand-bugs {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 46px));
-  gap: var(--space-1);
+  grid-template-columns: repeat(8, minmax(0, 56px));
+  gap: 1px;
   margin: 0;
   padding: 2px 0 0;
   list-style: none;
@@ -736,7 +802,9 @@ h2 {
   position: relative;
   display: block;
   width: 100%;
-  padding: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 1px;
   border-radius: var(--radius-sm);
   transition: transform 0.12s;
 }
@@ -796,8 +864,9 @@ h2 {
   background: var(--color-neutral-100);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: var(--shadow-lg);
-  padding: var(--space-3) var(--space-4)
-    max(env(safe-area-inset-bottom), var(--space-3));
+  padding: var(--space-3) max(var(--inset-right), var(--space-4))
+    max(var(--inset-bottom), var(--space-3))
+    max(var(--inset-left), var(--space-4));
   transform: translateY(105%);
   visibility: hidden;
   transition:
@@ -851,7 +920,7 @@ h2 {
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
-  min-height: 34px;
+  min-height: 44px;
 }
 
 .move-ahead {
@@ -878,7 +947,10 @@ h2 {
   z-index: 10;
   display: grid;
   place-items: center;
-  padding: var(--space-4);
+  padding: max(var(--inset-top), var(--space-4))
+    max(var(--inset-right), var(--space-4))
+    max(var(--inset-bottom), var(--space-4))
+    max(var(--inset-left), var(--space-4));
   background: color-mix(in srgb, var(--color-neutral-900) 40%, transparent);
   animation: fade 0.15s ease-out;
 }
@@ -972,7 +1044,7 @@ h2 {
 
 /* ---- Wide screens ---- */
 
-@media (min-width: 860px) {
+@media (min-width: 860px) and (min-height: 541px) {
   .game {
     grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto auto;
@@ -982,10 +1054,10 @@ h2 {
       "white board"
       "controls board";
     gap: var(--space-2) var(--space-4);
-    padding: max(env(safe-area-inset-top), var(--space-4))
-      max(env(safe-area-inset-right), var(--space-4))
-      max(env(safe-area-inset-bottom), var(--space-4))
-      max(env(safe-area-inset-left), var(--space-4));
+    padding: max(var(--inset-top), var(--space-4))
+      max(var(--inset-right), var(--space-4))
+      max(var(--inset-bottom), var(--space-4))
+      max(var(--inset-left), var(--space-4));
   }
 
   .hand {
@@ -1014,5 +1086,45 @@ h2 {
   .moves-close,
   .ctl-moves {
     display: none;
+  }
+}
+
+/* ---- Phones on their side ---- */
+
+@media (orientation: landscape) and (max-height: 540px) {
+  .game {
+    grid-template-columns: 108px minmax(0, 1fr) 108px;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "black board white"
+      "controls board white";
+    gap: var(--space-1) 6px;
+    padding: max(var(--inset-top), var(--space-1)) max(var(--inset-right), 6px)
+      max(var(--inset-bottom), var(--space-1)) max(var(--inset-left), 6px);
+  }
+
+  .hand-head {
+    flex-wrap: wrap;
+    gap: 2px var(--space-1);
+  }
+
+  .meter {
+    margin-left: 0;
+  }
+
+  .hand-bugs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-content: end;
+  }
+
+  .ctl {
+    min-height: 44px;
+    max-width: none;
   }
 }

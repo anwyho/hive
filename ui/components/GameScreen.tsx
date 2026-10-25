@@ -19,6 +19,7 @@ import {
   kindsInGame,
   moveFor,
   pieceName,
+  queenCovered,
   queenPressure,
   selectBoard,
   selectHand,
@@ -155,6 +156,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
       queenOnly={queenOnly && turn === color}
       selected={turn === color ? selectedBug : null}
       pressure={queenPressure(state, color)}
+      covered={queenCovered(state, color)}
       onPick={(bug) => pickBug(color, bug)}
     />
   );

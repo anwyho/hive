@@ -163,3 +163,42 @@ export function kindsInGame(options: GameOptions, color: Color): PieceId[] {
   }
   return kinds;
 }
+
+export interface StackMarks {
+  readonly beneath: PieceId | null;
+  readonly buriedQueens: readonly Color[];
+  readonly threat: boolean;
+}
+
+/* What a stack hides, for drawing it on the board. A buried queen is a
+   threat when it belongs to the opponent of the player to move: that side
+   cannot move it out from under the stack. */
+export function stackMarks(
+  stack: readonly PieceId[],
+  toMove: Color,
+): StackMarks {
+  const covered = stack.slice(0, -1);
+  const buriedQueens = covered
+    .filter((p) => bugOf(p) === "Q")
+    .map((p) => colorOf(p));
+  return {
+    beneath: covered.at(-1) ?? null,
+    buriedQueens,
+    threat: buriedQueens.some((c) => c !== toMove),
+  };
+}
+
+export function stackLabel(stack: readonly PieceId[]): string {
+  const top = stack.at(-1);
+  if (top === undefined) return "";
+  const below = stack.slice(0, -1).reverse().map(pieceName);
+  return below.length === 0
+    ? pieceName(top)
+    : `${pieceName(top)}, covering ${below.join(", then ")}`;
+}
+
+export function queenCovered(state: GameState, color: Color): boolean {
+  const queen = parsePieceId(color + "Q");
+  const at = positionOf(state, queen);
+  return at !== undefined && topAt(state, at) !== queen;
+}

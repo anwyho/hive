@@ -1,0 +1,47 @@
+/* Piece tokens. Tiles are absolute: a white tile stays light in the dark
+   theme, so the dark block picks the opposite ramp steps.
+
+   Each bug owns a hue, in OKLCH like the ramps in tokens.css: a deep step for
+   light tiles and a bright step for dark ones, each at least 3.9:1 against
+   both themes' tile faces. Light and dark tiles are the same in both themes
+   to within a few lightness points, so the bug hues need no dark block. */
+:root {
+  --piece-w: var(--color-neutral-100);
+  --piece-w-rim: var(--color-neutral-100);
+  --piece-w-ink: var(--color-neutral-900);
+  --piece-b: var(--color-neutral-900);
+  --piece-b-rim: var(--color-neutral-900);
+  --piece-b-ink: var(--color-neutral-200);
+  --board-bg: var(--color-surface);
+  --queen-mark: var(--bug-q-on-light);
+  --queen-mark-ink: var(--piece-w);
+
+  --bug-q-on-light: oklch(0.56 0.115 75);
+  --bug-q-on-dark: oklch(0.86 0.15 88);
+  --bug-b-on-light: oklch(0.45 0.16 305);
+  --bug-b-on-dark: oklch(0.78 0.11 305);
+  --bug-g-on-light: oklch(0.5 0.14 145);
+  --bug-g-on-dark: oklch(0.82 0.16 145);
+  --bug-s-on-light: oklch(0.45 0.08 50);
+  --bug-s-on-dark: oklch(0.78 0.07 60);
+  --bug-a-on-light: oklch(0.47 0.15 255);
+  --bug-a-on-dark: oklch(0.78 0.1 245);
+  --bug-m-on-light: oklch(0.46 0.03 250);
+  --bug-m-on-dark: oklch(0.8 0.025 250);
+  --bug-l-on-light: oklch(0.53 0.19 27);
+  --bug-l-on-dark: oklch(0.72 0.16 25);
+  --bug-p-on-light: oklch(0.5 0.085 195);
+  --bug-p-on-dark: oklch(0.8 0.1 190);
+}
+
+:root[data-theme="dark"] {
+  --piece-w: var(--color-neutral-900);
+  --piece-w-rim: var(--color-neutral-900);
+  --piece-w-ink: var(--color-neutral-100);
+  --piece-b: var(--color-neutral-300);
+  --piece-b-rim: var(--color-neutral-500);
+  --piece-b-ink: var(--color-neutral-800);
+  --board-bg: var(--color-neutral-100);
+  --queen-mark: var(--bug-q-on-dark);
+  --queen-mark-ink: var(--piece-b);
+}

@@ -18,6 +18,7 @@ interface Props {
   queenOnly: boolean;
   selected: Bug | null;
   pressure: number | null;
+  covered: boolean;
   onPick(bug: Bug): void;
 }
 
@@ -29,6 +30,7 @@ export function Hand({
   queenOnly,
   selected,
   pressure,
+  covered,
   onPick,
 }: Props) {
   const pieces = hand(state, color);
@@ -45,7 +47,7 @@ export function Hand({
             {queenOnly ? "Place your queen" : "To move"}
           </span>
         ) : null}
-        <QueenMeter pressure={pressure} />
+        <QueenMeter pressure={pressure} covered={covered} />
       </header>
       <ul class="hand-bugs">
         {kinds.map((kind) => {
@@ -81,18 +83,25 @@ export function Hand({
   );
 }
 
-function QueenMeter({ pressure }: { pressure: number | null }) {
+function QueenMeter({
+  pressure,
+  covered,
+}: {
+  pressure: number | null;
+  covered: boolean;
+}) {
   const label =
     pressure === null
       ? "Queen not placed"
-      : `Queen surrounded on ${pressure} of 6 sides`;
+      : `Queen surrounded on ${pressure} of 6 sides${covered ? ", and covered" : ""}`;
   return (
     <span
-      class={`meter${pressure !== null && pressure >= 4 ? " meter-danger" : ""}`}
+      class={`meter${pressure !== null && pressure >= 4 ? " meter-danger" : ""}${covered ? " meter-covered" : ""}`}
       role="img"
       aria-label={label}
       title={label}
     >
+      {covered ? <span class="meter-flag">Covered</span> : null}
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <i key={i} class={pressure !== null && i < pressure ? "on" : ""} />
       ))}
