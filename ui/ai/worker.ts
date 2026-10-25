@@ -16,9 +16,7 @@ port.onmessage = (event) => {
   try {
     const request = parseRequest(event.data);
     id = request.id;
-    const game = parseGame(request.game, {
-      tournamentOpening: request.tournamentOpening,
-    });
+    const game = parseGame(request.game);
     const { move } = chooseMove(game, request);
     const state = replay(game.options, game.moves);
     port.postMessage({ id, move: moveToString(state, move) });

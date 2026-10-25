@@ -1,12 +1,11 @@
 import { isLevel, type Level } from "../../hive/ai/index.js";
 
-/* The page sends the game as a UHP GameString (plus the one rule UHP does not
-   record); the worker answers with a UHP move string, which the page parses
-   and checks against its own position before playing it. */
+/* The page sends the game as a UHP GameString; the worker answers with a UHP
+   move string, which the page parses and checks against its own position
+   before playing it. */
 export interface Request {
   readonly id: number;
   readonly game: string;
-  readonly tournamentOpening: boolean;
   readonly level: Level;
   readonly seed: number;
 }
@@ -23,7 +22,6 @@ export function parseRequest(data: unknown): Request {
     !isObject(data) ||
     typeof data.id !== "number" ||
     typeof data.game !== "string" ||
-    typeof data.tournamentOpening !== "boolean" ||
     !isLevel(data.level) ||
     typeof data.seed !== "number"
   ) {
@@ -32,7 +30,6 @@ export function parseRequest(data: unknown): Request {
   return {
     id: data.id,
     game: data.game,
-    tournamentOpening: data.tournamentOpening,
     level: data.level,
     seed: data.seed,
   };

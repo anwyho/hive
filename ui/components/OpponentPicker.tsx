@@ -1,25 +1,32 @@
 import { h } from "../../vendor/preact.module.js";
-import { LEVELS, type Level } from "../../hive/ai/index.js";
+import { LEVELS, LEVEL_SPECS } from "../../hive/ai/index.js";
 import type { Opponent } from "../players.js";
 
-interface Option<T extends string> {
+interface Option<T extends string | number> {
   readonly value: T;
   readonly label: string;
+  readonly name?: string;
 }
 
-function Segmented<T extends string>(props: {
+function Segmented<T extends string | number>(props: {
   label: string;
   options: readonly Option<T>[];
   value: T;
   onChange(value: T): void;
+  class?: string;
 }) {
   return (
-    <div class="segmented" role="radiogroup" aria-label={props.label}>
+    <div
+      class={`segmented ${props.class ?? ""}`}
+      role="radiogroup"
+      aria-label={props.label}
+    >
       {props.options.map((o) => (
         <button
-          key={o.value}
+          key={String(o.value)}
           role="radio"
           aria-checked={o.value === props.value}
+          aria-label={o.name}
           onClick={() => props.onChange(o.value)}
         >
           {o.label}
@@ -34,11 +41,11 @@ const KINDS: readonly Option<Opponent["kind"]>[] = [
   { value: "computer", label: "Computer" },
 ];
 
-const LEVEL_NAMES: Readonly<Record<Level, string>> = {
-  easy: "Easy",
-  medium: "Medium",
-  hard: "Hard",
-};
+const LEVEL_OPTIONS = LEVELS.map((l) => ({
+  value: l,
+  label: String(l),
+  name: `Level ${l}, ${LEVEL_SPECS[l].name}`,
+}));
 
 const SIDES: readonly Option<Opponent["side"]>[] = [
   { value: "w", label: "White" },
@@ -63,10 +70,16 @@ export function OpponentPicker({
       />
       {value.kind === "computer" ? (
         <div class="opponent-rows">
-          <span class="opponent-label">Difficulty</span>
+          <span class="opponent-label">
+            Level{" "}
+            <span class="opponent-level">
+              {value.level} · {LEVEL_SPECS[value.level].name}
+            </span>
+          </span>
           <Segmented
-            label="Difficulty"
-            options={LEVELS.map((l) => ({ value: l, label: LEVEL_NAMES[l] }))}
+            label="Level"
+            class="segmented-levels"
+            options={LEVEL_OPTIONS}
             value={value.level}
             onChange={(level) => onChange({ ...value, level })}
           />

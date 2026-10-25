@@ -25,20 +25,41 @@ export const HOT_SEAT: SeatConfig = { w: "human", b: "human" };
 
 const HUMAN: Player = { kind: "human" };
 
-export function playersFor(config: SeatConfig, client: AiClient): Seats {
+/* However fast the search, the computer's move lands no sooner than
+   `minThinkMs` after its turn starts, so its turn reads as a turn. */
+export function playersFor(
+  config: SeatConfig,
+  client: AiClient,
+  minThinkMs = 600,
+): Seats {
   const player = (seat: Seat): Player =>
     seat === "human"
       ? HUMAN
       : {
           kind: "computer",
-          choose: (game, state, signal) =>
-            client.choose(game, state, seat, signal),
+          choose: async (game, state, signal) => {
+            const [move] = await Promise.all([
+              client.choose(game, state, seat, signal),
+              pause(minThinkMs, signal),
+            ]);
+            return move;
+          },
         };
   return { w: player(config.w), b: player(config.b) };
 }
 
-export function isHuman(config: SeatConfig, ply: number): boolean {
-  return config[ply % 2 === 0 ? "w" : "b"] === "human";
+function pause(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const done = () => {
+      clearTimeout(timer);
+      reject(new DOMException("cancelled", "AbortError"));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", done);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", done, { once: true });
+  });
 }
 
 /* The colour a person plays against the computer, or null in hot-seat. */
@@ -63,11 +84,11 @@ export function seatsFor(o: Opponent, random: () => number): SeatConfig {
 
 export function opponentOf(config: SeatConfig): Opponent {
   const side = humanColor(config);
-  if (side === null) return { kind: "human", level: "medium", side: "w" };
+  if (side === null) return { kind: "human", level: 4, side: "w" };
   const level = config[side === "w" ? "b" : "w"];
   return {
     kind: "computer",
-    level: level === "human" ? "medium" : level,
+    level: level === "human" ? 4 : level,
     side,
   };
 }

@@ -11,45 +11,20 @@ import { Help } from "./Help.js";
 import { opponentOf, seatsFor, type SeatConfig } from "../players.js";
 import { InstallHint } from "./InstallHint.js";
 import { OpponentPicker } from "./OpponentPicker.js";
-import { Switch } from "./Switch.js";
+import { ExpansionPicker } from "./ExpansionPicker.js";
 import { ThemeToggle } from "./ThemeToggle.js";
-import { TileBody, TileIcon } from "./Tile.js";
+import { TileBody } from "./Tile.js";
 import { UpdateRow } from "./UpdateRow.js";
 
 interface Props {
   initial: GameOptions;
   initialSeats: SeatConfig;
   canResume: boolean;
+  notice: string | null;
   onStart(options: GameOptions, seats: SeatConfig): void;
   onResume(): void;
   onImport(): void;
 }
-
-const EXPANSIONS: readonly {
-  key: keyof Expansions;
-  label: string;
-  piece: string;
-  detail: string;
-}[] = [
-  {
-    key: "mosquito",
-    label: "Mosquito",
-    piece: "wM",
-    detail: "Copies the moves of the bugs it touches",
-  },
-  {
-    key: "ladybug",
-    label: "Ladybug",
-    piece: "wL",
-    detail: "Two steps over the hive, one step down",
-  },
-  {
-    key: "pillbug",
-    label: "Pillbug",
-    piece: "wP",
-    detail: "Can lift a neighbour over itself",
-  },
-];
 
 /* A loose cluster for the title: the base bugs as they might sit mid-game. */
 const CLUSTER: readonly [string, number, number][] = [
@@ -65,12 +40,12 @@ export function NewGame({
   initial,
   initialSeats,
   canResume,
+  notice,
   onStart,
   onResume,
   onImport,
 }: Props) {
   const [expansions, setExpansions] = useState<Expansions>(initial.expansions);
-  const [tournament, setTournament] = useState(initial.tournamentOpening);
   const install = useInstallHint();
   const [help, setHelp] = useState(false);
   const [opponent, setOpponent] = useState(() => opponentOf(initialSeats));
@@ -101,28 +76,16 @@ export function NewGame({
         <p>Play a friend or the computer. Surround the other queen to win.</p>
       </header>
 
+      {notice ? (
+        <p class="setup-notice" role="status">
+          {notice}
+        </p>
+      ) : null}
+
       <section class="setup-card" aria-label="Game options">
         <h2>Opponent</h2>
         <OpponentPicker value={opponent} onChange={setOpponent} />
-        <h2>Expansions</h2>
-        {EXPANSIONS.map((x) => (
-          <Switch
-            key={x.key}
-            checked={expansions[x.key]}
-            label={x.label}
-            detail={x.detail}
-            onChange={(on) => setExpansions({ ...expansions, [x.key]: on })}
-          >
-            <TileIcon piece={parsePieceId(x.piece)} label="" />
-          </Switch>
-        ))}
-        <h2>Rules</h2>
-        <Switch
-          checked={tournament}
-          label="Tournament opening"
-          detail="No queen on either player's first turn"
-          onChange={setTournament}
-        />
+        <ExpansionPicker value={expansions} onChange={setExpansions} />
       </section>
 
       <div class="setup-actions">
@@ -134,10 +97,7 @@ export function NewGame({
         <button
           class={canResume ? "btn" : "btn btn-primary"}
           onClick={() =>
-            onStart(
-              { expansions, tournamentOpening: tournament },
-              seatsFor(opponent, Math.random),
-            )
+            onStart({ expansions }, seatsFor(opponent, Math.random))
           }
         >
           Start game

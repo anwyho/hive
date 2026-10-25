@@ -108,7 +108,6 @@ export function aiClient(
         w.postMessage({
           id,
           game: gameToString(game),
-          tournamentOpening: game.options.tournamentOpening,
           level,
           seed: seed(),
         });

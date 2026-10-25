@@ -9,7 +9,6 @@ import { importGame, type GameRecord } from "./record.js";
 
 const DEFAULTS: GameOptions = {
   expansions: { mosquito: false, ladybug: false, pillbug: false },
-  tournamentOpening: true,
 };
 
 export function App() {
@@ -37,6 +36,11 @@ export function App() {
           initial={record?.options ?? DEFAULTS}
           initialSeats={game.seats}
           canResume={!!record && !game.outcome}
+          notice={
+            game.discarded && !record
+              ? "Your saved game used older rules and could not be restored."
+              : null
+          }
           onStart={(options, seats) => {
             game.start(options, seats);
             setGames((n) => n + 1);

@@ -13,7 +13,6 @@ import { LESSONS, PLACEMENTS, type Diagram } from "./lessons.js";
 
 const OPTIONS = {
   expansions: { mosquito: true, ladybug: true, pillbug: true },
-  tournamentOpening: true,
 };
 
 export function positionOf(diagram: Diagram): GameState {

@@ -1,4 +1,4 @@
-/* ---- Opponent choice and the computer's turn ---- */
+/* ---- New game: opponent, level, expansions ---- */
 
 .opponent {
   display: flex;
@@ -8,15 +8,20 @@
 }
 
 .opponent-rows {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .opponent-label {
   font-weight: 650;
   font-size: 14px;
+  padding-top: var(--space-1);
+}
+
+.opponent-level {
+  font-weight: 500;
+  color: var(--color-neutral-700);
 }
 
 .segmented {
@@ -30,7 +35,7 @@
 .segmented > button {
   flex: 1;
   min-width: 0;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 var(--space-2);
   border-radius: 999px;
   font-weight: 650;
@@ -38,11 +43,78 @@
   color: var(--color-neutral-700);
 }
 
+.segmented-levels > button {
+  padding: 0;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
 .segmented > button[aria-checked="true"] {
   background: var(--color-accent);
   color: var(--color-neutral-100);
   box-shadow: var(--shadow-sm);
 }
+
+.expansions {
+  margin-top: var(--space-2);
+}
+
+.expansions > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.expansions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.expansions > summary::after {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin: 0 6px 4px auto;
+  border-right: 2px solid var(--color-neutral-700);
+  border-bottom: 2px solid var(--color-neutral-700);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.expansions[open] > summary::after {
+  margin-bottom: -4px;
+  transform: rotate(-135deg);
+}
+
+.expansions-title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 18px;
+  color: var(--color-neutral-800);
+}
+
+.expansions-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--color-neutral-700);
+}
+
+.setup-notice {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-200);
+  color: var(--color-accent-900);
+  font-size: 14px;
+}
+
+/* ---- The computer's turn ---- */
 
 .status .thinking {
   flex: none;
