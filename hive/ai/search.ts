@@ -118,7 +118,18 @@ export function search(
     let best = -INF;
     let bestMove: Move | null = null;
     for (const move of moves) {
-      const s = -negamax(advance(pos, move), depth - 1, -beta, -alpha, ply + 1);
+      const child = advance(pos, move);
+      /* Principal variation search: after the first move, try to prove each
+         one no better with a null window, and search fully only if it is. */
+      let s: number;
+      if (bestMove === null) {
+        s = -negamax(child, depth - 1, -beta, -alpha, ply + 1);
+      } else {
+        s = -negamax(child, depth - 1, -alpha - 1, -alpha, ply + 1);
+        if (s > alpha && s < beta) {
+          s = -negamax(child, depth - 1, -beta, -alpha, ply + 1);
+        }
+      }
       if (s > best) {
         best = s;
         bestMove = move;
