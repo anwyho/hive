@@ -140,7 +140,6 @@ describe("game strings", () => {
       gameToString({
         options: {
           expansions: { mosquito: false, ladybug: false, pillbug: false },
-          tournamentOpening: true,
         },
         moves: [],
       }),
@@ -175,7 +174,6 @@ describe("game strings", () => {
       assert.equal(game.options.expansions.mosquito, type.includes("M"));
       assert.equal(game.options.expansions.ladybug, type.includes("L"));
       assert.equal(game.options.expansions.pillbug, type.includes("P"));
-      assert.equal(game.options.tournamentOpening, true);
     }
     for (const bad of ["Base+", "Base+PM", "Base+MM", "base", "Base+X"]) {
       assert.throws(
@@ -213,9 +211,7 @@ describe("game strings", () => {
     assert.throws(() => parseGame("Base;NotStarted"), /not a GameString/);
   });
 
-  it("accept a non-tournament opening when asked", () => {
-    const text = "Base;InProgress;Black[1];wQ";
-    assert.throws(() => parseGame(text));
-    assert.equal(parseGame(text, { tournamentOpening: false }).moves.length, 1);
+  it("reject a queen on the first turn, which the rules never allow", () => {
+    assert.throws(() => parseGame("Base;InProgress;Black[1];wQ"), /first turn/);
   });
 });

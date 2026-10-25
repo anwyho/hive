@@ -92,7 +92,6 @@ function randomOptions(random: () => number): GameOptions {
       ladybug: random() < 0.5,
       pillbug: random() < 0.5,
     },
-    tournamentOpening: random() < 0.8,
   };
 }
 
@@ -178,8 +177,7 @@ export function checkRandomGames(firstSeed: number, count: number): void {
     if (g % 3 === 0) {
       const game = { options, moves };
       const text = gameToString(game);
-      const rules = { tournamentOpening: options.tournamentOpening };
-      assert.deepEqual(parseGame(text, rules), game);
+      assert.deepEqual(parseGame(text), game);
     }
     endings.set(result(state), (endings.get(result(state)) ?? 0) + 1);
   }

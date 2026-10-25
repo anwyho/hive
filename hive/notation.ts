@@ -147,8 +147,6 @@ function turnString(state: GameState): string {
   return `${side}[${turnOf(view(state).ply)}]`;
 }
 
-/* UHP has no field for the tournament opening; the string records only the
-   expansions and the moves. */
 export function gameToString(game: Game): string {
   let state = newGame(game.options);
   const moves: string[] = [];
@@ -164,10 +162,7 @@ export function gameToString(game: Game): string {
   ].join(";");
 }
 
-export function parseGame(
-  text: string,
-  rules: { readonly tournamentOpening?: boolean } = {},
-): Game {
+export function parseGame(text: string): Game {
   const parts = text.trim().split(";");
   if (parts.length < 3) {
     throw new ParseError(
@@ -182,9 +177,6 @@ export function parseGame(
   ];
   const options: GameOptions = normalizeOptions({
     expansions: parseGameType(typeText),
-    ...(rules.tournamentOpening === undefined
-      ? {}
-      : { tournamentOpening: rules.tournamentOpening }),
   });
   let state = newGame(options);
   const moves: Move[] = [];

@@ -72,13 +72,6 @@ describe("new game", () => {
     );
     assert.equal(hand(state, "b").length, 13);
   });
-
-  it("allows the queen first when the tournament opening is off", () => {
-    const state = newGame({ tournamentOpening: false });
-    assert.ok(
-      isLegal(state, { kind: "place", piece: id("wQ"), to: { q: 0, r: 0 } }),
-    );
-  });
 });
 
 describe("placement", () => {

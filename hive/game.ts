@@ -29,7 +29,6 @@ import {
 
 export interface GameOptions {
   readonly expansions: Expansions;
-  readonly tournamentOpening: boolean;
 }
 
 export type Result = "inProgress" | "whiteWins" | "blackWins" | "draw";
@@ -78,7 +77,6 @@ export function normalizeOptions(
       ladybug: expansions?.ladybug ?? false,
       pillbug: expansions?.pillbug ?? false,
     },
-    tournamentOpening: options.tournamentOpening ?? true,
   };
 }
 
@@ -180,7 +178,7 @@ function placeablePieces(state: GameState): PieceId[] {
   const firstTurn = turnOf(s.ply) === 1;
   const pieces: PieceId[] = [];
   for (const bug of bugsIn(s.options.expansions)) {
-    if (bug === "Q" && firstTurn && s.options.tournamentOpening) continue;
+    if (bug === "Q" && firstTurn) continue;
     const next = lowestInHand(s, color, bug);
     if (next !== undefined) pieces.push(next);
   }
@@ -382,11 +380,7 @@ function explainPlace(
   }
   const lowest = lowestInHand(s, color, bugOf(piece));
   if (lowest !== piece) return `place ${lowest} before ${piece}`;
-  if (
-    bugOf(piece) === "Q" &&
-    turnOf(s.ply) === 1 &&
-    s.options.tournamentOpening
-  ) {
+  if (bugOf(piece) === "Q" && turnOf(s.ply) === 1) {
     return "the queen may not be placed on a player's first turn";
   }
   if (mustPlaceQueen(state) && bugOf(piece) !== "Q") {
