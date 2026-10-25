@@ -98,7 +98,7 @@ export function NewGame({
           />
         </svg>
         <h1>Hive</h1>
-        <p>Two players, one screen. Surround the other queen to win.</p>
+        <p>Play a friend or the computer. Surround the other queen to win.</p>
       </header>
 
       <section class="setup-card" aria-label="Game options">
