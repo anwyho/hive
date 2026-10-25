@@ -6,7 +6,7 @@ export function InstallHint({ onDismiss }: { onDismiss: () => void }) {
   return (
     <div class="install">
       <span>
-        Keep it on your home screen — tap Share, then
+        Keep it on your home screen — tap Share, then{" "}
         <strong>Add to Home Screen</strong>.
       </span>
       <button aria-label="Dismiss" onClick={onDismiss}>
