@@ -554,32 +554,19 @@ h2 {
   stroke-dasharray: none;
 }
 
-.last-from {
-  fill: color-mix(in srgb, var(--color-accent-2) 18%, transparent);
-  stroke: var(--color-accent-2-600);
-  stroke-width: 4;
-  stroke-dasharray: 6 6;
-  stroke-linejoin: round;
-}
-
-.last-to {
-  fill: none;
-  stroke: var(--color-accent-2-600);
-  stroke-width: 6;
-  stroke-linejoin: round;
-}
-
 .fit {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  width: 76px;
-  height: 44px;
-  padding: 0 var(--space-3) 0 var(--space-2);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--space-3);
   border-radius: 999px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
+  line-height: 1;
   font-size: 13px;
   font-weight: 650;
   color: var(--color-neutral-700);
@@ -591,11 +578,6 @@ h2 {
   stroke: currentColor;
   stroke-width: 2.25;
   stroke-linecap: round;
-}
-
-.fit-on {
-  color: var(--color-accent-700);
-  box-shadow: inset 0 0 0 1.5px var(--color-accent);
 }
 
 .status {
@@ -700,19 +682,6 @@ h2 {
 }
 
 /* ---- Help ---- */
-
-.help-btn {
-  position: absolute;
-  top: var(--space-2);
-  right: calc(var(--space-2) + 76px + 6px);
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  color: var(--color-neutral-700);
-  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
-}
 
 .sheet.help {
   width: min(560px, 100%);

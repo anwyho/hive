@@ -126,15 +126,18 @@ export function toScreen(view: View, p: Point): Point {
   return { x: p.x * view.scale + view.x, y: p.y * view.scale + view.y };
 }
 
+/* `top` is extra room kept clear at the top, for what sits over the board
+   there. */
 export function fit(
   box: Box | null,
   size: Size,
   margin: number,
   maxScale = 60,
+  top = 0,
 ): View {
   const b = box ?? { minX: -1, minY: -1, maxX: 1, maxY: 1 };
   const w = Math.max(1, size.width - 2 * margin);
-  const h = Math.max(1, size.height - 2 * margin);
+  const h = Math.max(1, size.height - 2 * margin - top);
   const scale = Math.max(
     MIN_SCALE,
     Math.min(maxScale, w / (b.maxX - b.minX), h / (b.maxY - b.minY)),
@@ -143,7 +146,7 @@ export function fit(
   const cy = (b.minY + b.maxY) / 2;
   return {
     x: size.width / 2 - cx * scale,
-    y: size.height / 2 - cy * scale,
+    y: (size.height + top) / 2 - cy * scale,
     scale,
   };
 }
@@ -178,4 +181,14 @@ export function pinch(
   const m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 };
   const zoomed = d0 > 0 ? zoomAt(view, d1 / d0, m0) : view;
   return pan(zoomed, m1.x - m0.x, m1.y - m0.y);
+}
+
+/* Whether `view` shows what `fitted` shows, give or take a few pixels of
+   pan and a percent of zoom, so a jittery tap does not count as moving it. */
+export function isFitted(view: View, fitted: View, tolerance = 4): boolean {
+  return (
+    Math.abs(view.x - fitted.x) <= tolerance &&
+    Math.abs(view.y - fitted.y) <= tolerance &&
+    Math.abs(view.scale / fitted.scale - 1) <= 0.01
+  );
 }

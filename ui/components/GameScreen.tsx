@@ -13,6 +13,7 @@ import {
   type Hex,
 } from "../../hive/index.js";
 import { sameHex } from "../geometry.js";
+import { handOrigin, useArrival } from "../hooks/useArrival.js";
 import type { useGame } from "../hooks/useGame.js";
 import { lessonFor } from "../lessonBoard.js";
 import {
@@ -21,13 +22,15 @@ import {
   moveFor,
   queenCovered,
   queenPressure,
+  placeableBugs,
   selectBoard,
   selectHand,
   type Pick,
 } from "../selection.js";
 import { Board } from "./Board.js";
 import { Hand } from "./Hand.js";
-import { Help, HelpButton } from "./Help.js";
+import { Help } from "./Help.js";
+import { LastMoveLine } from "./LastMoveLine.js";
 import { BoardOverlay } from "./BoardOverlay.js";
 import { Controls } from "./Controls.js";
 import {
@@ -84,6 +87,8 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
 
   const turn = toMove(state);
   const queenOnly = !outcome && mustPlaceQueen(state);
+  const placeable = useMemo(() => placeableBugs(state), [state]);
+  const arrival = useArrival(record, game.lastMoves.latest);
   const kinds = useMemo(
     () => ({
       w: kindsInGame(record.options, "w"),
@@ -122,7 +127,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
   };
 
   const pickBug = (color: Color, bug: Bug) => {
-    if (game.thinking) return;
+    if (game.thinking || game.frozen) return;
     setHeld(null);
     const current = pick.selection;
     if (current?.kind === "hand" && bugOf(current.piece) === bug) {
@@ -154,6 +159,7 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
       kinds={kinds[color]}
       active={!outcome && turn === color}
       queenOnly={queenOnly && turn === color}
+      placeable={placeable}
       selected={turn === color ? selectedBug : null}
       pressure={queenPressure(state, color)}
       covered={queenCovered(state, color)}
@@ -179,15 +185,15 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
           state={state}
           targets={pick.targets}
           selected={pick.selection?.kind === "board" ? pick.selection.at : null}
-          last={game.last}
+          moves={game.lastMoves}
+          arrival={arrival}
+          origin={handOrigin}
           onTap={tapHex}
           onHold={holdHex}
         />
-        <HelpButton
-          onClick={() =>
-            setHelp(pick.selection ? lessonFor(bugOf(pick.selection.piece)) : 0)
-          }
-        />
+        {game.lastMoves.latest ? (
+          <LastMoveLine moves={game.lastMoves} onClick={() => setMoves(true)} />
+        ) : null}
         <BoardOverlay
           status={
             outcome
@@ -196,7 +202,9 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
                 ? "Computer is thinking"
                 : game.stuck
                   ? "The computer could not move"
-                  : `${colorName(turn)} to move`
+                  : game.frozen
+                    ? "Reviewing — undo or redo"
+                    : `${colorName(turn)} to move`
           }
           busy={game.thinking}
           detail={
@@ -253,6 +261,12 @@ export function GameScreen({ game, onNewGame, onImport }: Props) {
           onImport={() => {
             setMenu(false);
             onImport();
+          }}
+          onHelp={() => {
+            setMenu(false);
+            setHelp(
+              pick.selection ? lessonFor(bugOf(pick.selection.piece)) : 0,
+            );
           }}
           onDraw={() => {
             setMenu(false);

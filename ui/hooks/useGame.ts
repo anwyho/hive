@@ -11,7 +11,6 @@ import { aiClient } from "../ai/client.js";
 import {
   HOT_SEAT,
   humanColor,
-  isHuman,
   playersFor,
   type SeatConfig,
 } from "../players.js";
@@ -19,23 +18,28 @@ import {
   atEnd,
   end,
   jump,
-  lastMove,
   newRecord,
   outcomeAt,
   playMove,
-  redoTurn,
+  canRedo,
+  canUndo,
+  redo,
   retract,
   statesOf,
-  undoTurn,
+  undo,
   type Ending,
   type GameRecord,
 } from "../record.js";
+import { NO_MOVES, lastMoves } from "../lastMoves.js";
 import { loadGame, saveGame, type SavedGame } from "../storage.js";
 
 const client = aiClient();
 
 export function useGame() {
-  const [saved, setSaved] = useState<SavedGame | null>(loadGame);
+  const [stored] = useState(loadGame);
+  const [saved, setSaved] = useState<SavedGame | null>(() =>
+    stored.kind === "game" ? stored.saved : null,
+  );
   const record = saved?.record ?? null;
   const config = saved?.seats ?? HOT_SEAT;
 
@@ -80,12 +84,11 @@ export function useGame() {
     return () => controller.abort();
   }, [state, over, latest, seat]);
 
-  const last = useMemo(
-    () => (record ? lastMove(record, states) : null),
+  const moves = useMemo(
+    () => (record ? lastMoves(record, states) : NO_MOVES),
     [record, states],
   );
 
-  const humanAt = (cursor: number) => isHuman(config, cursor);
   const thinking = !!state && !over && latest && seat?.kind === "computer";
 
   return {
@@ -93,12 +96,17 @@ export function useGame() {
     states,
     state,
     outcome,
-    last,
+    lastMoves: moves,
     seats: config,
+    /* The saved game could not be replayed and was dropped. */
+    discarded: stored.kind === "discarded",
     /* The colour a person plays against the computer; null in hot-seat. */
     human: humanColor(config),
     thinking: thinking && failed !== state,
     stuck: thinking && failed === state,
+    /* Undo and redo step one ply in every mode. On the computer's turn
+       anywhere but the end, the board is read-only and the computer waits. */
+    frozen: !!state && !over && !latest && seat?.kind === "computer",
     humanToMove: seat?.kind === "human" && !outcome,
     mustPass:
       !!state &&
@@ -106,8 +114,8 @@ export function useGame() {
       legalMoves(state).length === 1 &&
       legalMoves(state)[0]!.kind === "pass",
     reviewing: record ? !latest : false,
-    canUndo: record ? undoTurn(record, humanAt) !== record : false,
-    canRedo: record ? redoTurn(record, humanAt) !== record : false,
+    canUndo: record ? canUndo(record) : false,
+    canRedo: record ? canRedo(record) : false,
     start: (options: GameOptions, seats: SeatConfig = HOT_SEAT) =>
       setSaved({ record: newRecord(options), seats }),
     load: (r: GameRecord) => setSaved({ record: r, seats: HOT_SEAT }),
@@ -116,10 +124,10 @@ export function useGame() {
       setRecord((r) =>
         r === record && state && isLegal(state, move) ? playMove(r, move) : r,
       ),
-    undo: () => setRecord((r) => undoTurn(r, humanAt)),
-    redo: () => setRecord((r) => redoTurn(r, humanAt)),
+    undo: () => setRecord(undo),
+    redo: () => setRecord(redo),
     jump: (cursor: number) => setRecord((r) => jump(r, cursor)),
-    retract: () => setRecord((r) => retract(r, humanAt)),
+    retract: () => setRecord(retract),
     end: (ending: Ending) => setRecord((r) => end(r, ending)),
   };
 }

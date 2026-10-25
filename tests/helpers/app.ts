@@ -129,3 +129,27 @@ export const rectOf = (page: Page, selector: string): Promise<Rect | null> =>
       bottom: r.bottom,
     };
   }, selector);
+
+/* Animations the app starts from script (the slide and the refit), not CSS
+   ones such as a thinking dot. */
+export const scripted = (page: Page) =>
+  page.evaluate(
+    () =>
+      document
+        .getAnimations()
+        .filter(
+          (a) => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition),
+        ).length,
+  );
+
+/* Taps land where the model says, so a test waits for the picture to match
+   it before reading positions off the screen. */
+export const motionDone = (page: Page) =>
+  page.waitForFunction(
+    () =>
+      document
+        .getAnimations()
+        .filter(
+          (a) => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition),
+        ).length === 0,
+  );

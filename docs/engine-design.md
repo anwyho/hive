@@ -16,9 +16,9 @@ only through `hive/index.ts`.
   Internally cells key to a packed integer; that key never leaves the module.
 - **Stack** — pieces on one hex, bottom → top. Only the top piece is "visible"
   (it owns the hex colour for placement, it is what a mosquito copies).
-- **GameOptions** `{ expansions: { mosquito, ladybug, pillbug: boolean },
-tournamentOpening: boolean }`. Tournament opening: no queen on either
-  player's first placement.
+- **GameOptions** `{ expansions: { mosquito, ladybug, pillbug: boolean } }`.
+  No queen on either player's first placement is always the rule; it is not
+  an option.
 - **Move** (discriminated union):
   - `{ kind: "place", piece, to }`
   - `{ kind: "move", piece, to }` — covers a bug's own movement and a pillbug
@@ -80,6 +80,7 @@ freeze and a pending pass are not readable from `GameState`.
 ```mermaid
 graph LR
   index --> difficulty --> search
+  index --> skill --> search
   index --> eval --> hexes
   index --> hash
   index --> random
@@ -92,7 +93,9 @@ graph LR
   frozen piece and a pending pass. Keys are mixed, not tabled, because the
   board is unbounded. `advance` is `play` plus the incremental update.
 - `search`: negamax, alpha-beta, principal variation windows, iterative
-  deepening, a transposition table, killers and history. Depth 1 always
+  deepening, a transposition table, killers and history, and optional
+  late-move reductions (moves fourth or later at depth 3 and up, except moves
+  onto the enemy queen's ring, are tried a ply shallower first). Depth 1 always
   completes; deeper iterations stop on a node cap or a clock read every 512
   nodes, and the last complete iteration (or a better move from the
   interrupted one) is played. It takes an `Evaluator`, not `eval`.
@@ -101,10 +104,25 @@ graph LR
 - `eval`: queen pressure (non-linear in occupied neighbours), free versus
   pinned or covered pieces by bug, pieces in hand, a piece on the enemy
   queen, a pillbug by its own queen. Weights live in one table, `WEIGHTS`.
-- `difficulty`: Easy is one ply with a seeded bonus per root move, so it
-  takes a win in one but otherwise picks among near-equal moves. Medium is
-  three plies; Hard deepens to 100k nodes or 2.5 s. The node caps bind first on a fast
-  machine, which keeps a seed reproducible; the clock bounds a slow phone.
+- `skill`: picks from the search's root scores. A found win is always
+  played; otherwise, with probability `blunder`, any legal move; otherwise
+  the best after a seeded bonus in `[0, noise)` per move.
+- `difficulty`: one table, level 1-7 → search limits and skill.
+
+  | Level | Name     | Search                                         | Noise | Blunder |
+  | ----- | -------- | ---------------------------------------------- | ----- | ------- |
+  | 1     | Beginner | 1 ply                                          | 400   | 60%     |
+  | 2     | Novice   | 1 ply                                          | 250   | 15%     |
+  | 3     | Casual   | 1 ply                                          | 60    | 3%      |
+  | 4     | Club     | 2 plies                                        | 30    | 0       |
+  | 5     | Strong   | 3 plies                                        | 0     | 0       |
+  | 6     | Expert   | deepening, 40k nodes or 1 s                    | 0     | 0       |
+  | 7     | Master   | deepening with reductions, 100k nodes or 2.5 s | 0     | 0       |
+
+  Levels 1-5 are reproducible from their seed anywhere. On 6 and 7 the node
+  cap binds first on a fast machine, which keeps a seed reproducible there;
+  the clock bounds a slow phone. Version 2 saves named three levels; they
+  load as 2, 4 and 7.
 
 `play()` is not the bottleneck: legal-move generation is (about 15k
 `legalMoves` calls a second on an M-series Mac, against 350k `play` calls),
@@ -138,8 +156,9 @@ toLevel)` with the piece removed from `from`. Let `a`, `b` be the two cells
 
 - Gate formula (FAQ): blocked iff `min(h(C),h(D)) > max(h(A),h(B))`, stack
   heights, mover lifted from A. Same as the level form above.
-- Default `tournamentOpening: true` — the 2024 rules make "no queen on first
-  placement" standard. The option exists to turn it off (pre-2024 rules).
+- No queen on a player's first placement, always — the 2024 rules make it
+  standard. The engine has no switch for the pre-2024 opening, so a UHP
+  record that places a queen on turn 1 does not parse.
 - `lastMoved` is set only by `move` (own movement or throw). A placement sets
   it to null: a just-placed piece may be thrown. (Flag to user.)
 - A pillbug that is `lastMoved` cannot use its ability. A mosquito adjacent to

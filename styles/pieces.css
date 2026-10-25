@@ -47,3 +47,25 @@
   --queen-mark-ink: var(--piece-b);
   --cant-mark: var(--bug-l-on-dark);
 }
+
+/* The queen's gold rim, inside the face: a deep gold on light tiles and a
+   bright one on dark tiles, each at least 3:1 against its face. */
+:root {
+  --queen-gold-on-light: oklch(0.58 0.13 78);
+  --queen-gold-on-dark: oklch(0.84 0.15 88);
+}
+
+.tile-w {
+  --queen-gold: var(--queen-gold-on-light);
+}
+
+.tile-b {
+  --queen-gold: var(--queen-gold-on-dark);
+}
+
+.tile-queen-rim {
+  fill: none;
+  stroke: var(--queen-gold);
+  stroke-width: 5;
+  stroke-linejoin: round;
+}

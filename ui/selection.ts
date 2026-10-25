@@ -54,6 +54,16 @@ export function pieceName(piece: PieceId): string {
   return `${colorName(colorOf(piece))} ${BUG_NAMES[bugOf(piece)].toLowerCase()}${ordinal ? " " + ordinal : ""}`;
 }
 
+/* The bugs the side to move may place now, read off the engine's legal
+   moves, so every placement rule greys out the hand the same way. */
+export function placeableBugs(state: GameState): ReadonlySet<Bug> {
+  const bugs = new Set<Bug>();
+  for (const m of legalMoves(state)) {
+    if (m.kind === "place") bugs.add(bugOf(m.piece));
+  }
+  return bugs;
+}
+
 export function selectHand(state: GameState, color: Color, bug: Bug): Pick {
   if (result(state) !== "inProgress") {
     return { ...NONE, notice: "The game is over." };
@@ -129,7 +139,7 @@ const REASONS: readonly [
   ],
   [
     /may not be placed on a player's first turn/,
-    () => "The queen cannot be placed on the first turn.",
+    () => "The queen can't be placed on your first turn.",
   ],
   [/cannot reach/, () => "This piece has nowhere to go."],
   [/must touch/, () => "There is nowhere to place this piece."],

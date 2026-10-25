@@ -16,6 +16,7 @@ import {
   fit,
   hexKey,
   hexToPoint,
+  isFitted,
   neighbours,
   pointToHex,
   polygon,
@@ -23,16 +24,22 @@ import {
   type Point,
   type Size,
 } from "../geometry.js";
+import { useBoardMotion, type Slide } from "../hooks/useBoardMotion.js";
 import { usePanZoom } from "../hooks/usePanZoom.js";
-import type { LastMove } from "../record.js";
+import type { LastMoves, MoveView } from "../lastMoves.js";
 import { stackLabel, stackMarks } from "../selection.js";
+import { MoveMarks } from "./MoveMarks.js";
 import { TileBody } from "./Tile.js";
 
 interface Props {
   state: GameState;
   targets: readonly Hex[];
   selected: Hex | null;
-  last: LastMove | null;
+  moves: LastMoves;
+  /* The move to slide in, set only when the record stepped one move
+     forward; `origin` gives a placement's starting point on screen. */
+  arrival: MoveView | null;
+  origin(move: MoveView): Point | null;
   onTap(hex: Hex): void;
   onHold(hex: Hex): void;
 }
@@ -42,6 +49,10 @@ interface Props {
 const TILE = 0.02;
 const LIFT = 6;
 const MARGIN = 14;
+/* The turn line, and under it the last-moves line, sit over the board's top
+   edge; the fit keeps the hive clear of them. */
+const OVERLAY = 40;
+const OVERLAY_WITH_MOVES = 96;
 const OUTLINE = polygon(44);
 const MARK = polygon(38);
 
@@ -49,7 +60,9 @@ export function Board({
   state,
   targets,
   selected,
-  last,
+  moves,
+  arrival,
+  origin,
   onTap,
   onHold,
 }: Props) {
@@ -80,13 +93,38 @@ export function Board({
     return boundsOf(hexes);
   }, [cells]);
 
-  const auto = useMemo(() => fit(bounds, size, MARGIN), [bounds, size]);
+  const top = moves.latest ? OVERLAY_WITH_MOVES : OVERLAY;
+  const auto = useMemo(
+    () => fit(bounds, size, MARGIN, undefined, top),
+    [bounds, size, top],
+  );
 
   const hexAt = (p: Point) => pointToHex(toWorld(view, p));
   const { ref, view, manual, refit } = usePanZoom(auto, {
     onTap: (p) => onTap(hexAt(p)),
     onHold: (p) => onHold(hexAt(p)),
   });
+
+  /* Every new position refits; the Fit button is only for a view the
+     reader has moved away from the fit. */
+  useEffect(() => refit(), [state]);
+  const offFit = manual && !isFitted(view, auto);
+
+  const layer = useRef<SVGGElement>(null);
+  const slide = useMemo((): Slide | null => {
+    if (!arrival?.to) return null;
+    const to = hexToPoint(arrival.to);
+    let from: Point | null = arrival.from ? hexToPoint(arrival.from) : null;
+    if (!from) {
+      const screen = origin(arrival);
+      const box = ref.current?.getBoundingClientRect();
+      if (screen && box) {
+        from = toWorld(auto, { x: screen.x - box.left, y: screen.y - box.top });
+      }
+    }
+    return from ? { id: arrival.ply, key: hexKey(arrival.to), from, to } : null;
+  }, [arrival?.ply]);
+  useBoardMotion(layer, view, !manual, state, slide);
 
   const selectedKey = selected ? hexKey(selected) : null;
   const turn = toMove(state);
@@ -105,19 +143,14 @@ export function Board({
         aria-label="Board"
       >
         <g
+          ref={layer}
           transform={`matrix(${view.scale} 0 0 ${view.scale} ${view.x} ${view.y})`}
         >
-          {last?.from ? (
-            <polygon
-              class="last-from"
-              points={OUTLINE}
-              transform={at(last.from)}
-            />
-          ) : null}
+          <MoveMarks moves={moves} layer="under" at={at} />
           {cells.map(([hex, stack]) => {
             const key = hexKey(hex);
             return (
-              <g key={key}>
+              <g key={key} data-cell={key}>
                 <g
                   transform={at(hex, key === selectedKey ? LIFT : 0)}
                   aria-label={stackLabel(stack)}
@@ -131,9 +164,7 @@ export function Board({
               </g>
             );
           })}
-          {last ? (
-            <polygon class="last-to" points={OUTLINE} transform={at(last.to)} />
-          ) : null}
+          <MoveMarks moves={moves} layer="over" at={at} />
           {targets.map((hex) => {
             const climb = stackHeight(cells, hex) > 0;
             return (
@@ -187,7 +218,8 @@ export function Board({
         </g>
       </svg>
       <button
-        class={manual ? "fit fit-on" : "fit"}
+        class="fit"
+        hidden={!offFit}
         aria-label="Fit the hive to the screen"
         title="Fit"
         onClick={refit}

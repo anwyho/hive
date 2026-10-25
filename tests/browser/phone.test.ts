@@ -39,7 +39,6 @@ const stored = (game: string) =>
   JSON.stringify({
     v: 1,
     game,
-    tournamentOpening: true,
     cursor: 999,
     ending: null,
   });
@@ -203,7 +202,7 @@ describe("on a phone", () => {
     const panned = await centre(page, piece);
     assert.ok(Math.abs(panned.x - start.x - 50) < 2, "panned 50px right");
     assert.ok(Math.abs(panned.y - start.y - 30) < 2, "panned 30px down");
-    assert.equal(await page.$$eval(".fit-on", (f) => f.length), 1);
+    assert.equal(await page.$$eval(".fit:not([hidden])", (f) => f.length), 1);
 
     const cdp = await page.createCDPSession();
     const touch = (type: string, spread: number) =>

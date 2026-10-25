@@ -2,6 +2,7 @@ import { strict as assert } from "node:assert";
 import { after, before, describe, it } from "node:test";
 import {
   harness,
+  motionDone,
   rectOf,
   rectOfText,
   settle,
@@ -37,6 +38,7 @@ const place = async (page: TestPage, handLabel: string) => {
   assert.ok(hand, `${handLabel} is in the hand`);
   await page.mouse.click(hand.x + hand.width / 2, hand.y + hand.height / 2);
   await settle(page);
+  await motionDone(page);
   const point = await page.evaluate(() => {
     const board = document.querySelector(".board")!.getBoundingClientRect();
     const cx = board.x + board.width / 2;
@@ -82,7 +84,7 @@ describe("playing the computer", () => {
     [375, 667],
     [390, 844],
   ] as const) {
-    it(`plays, undoes both plies, reloads and plays offline at ${width}x${height}`, async () => {
+    it(`plays, steps back a ply at a time, reloads and plays offline at ${width}x${height}`, async () => {
       const page = await h.page();
       await page.setViewport({
         width,
@@ -95,10 +97,9 @@ describe("playing the computer", () => {
       assert.ok(await workerActive(page), "the service worker installs");
 
       await press(page, "Computer");
-      for (const label of ["Easy", "White"]) {
-        assert.ok(await rectOfText(page, label), `a ${label} choice`);
-      }
-      await press(page, "Easy");
+      assert.match(await text(page, ".opponent-level"), /4 · Club/);
+      await press(page, "2");
+      assert.match(await text(page, ".opponent-level"), /2 · Novice/);
       await press(page, "White");
       const scroll = await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -109,9 +110,16 @@ describe("playing the computer", () => {
       await place(page, "White soldier ant");
       await waitForMoves(page, 2);
       assert.match(await text(page, ".status"), /White to move.*Turn 2/);
+      assert.match(
+        await text(page, ".last-line"),
+        /White: placed Ant.*Black: placed/,
+      );
 
       await press(page, "Undo");
+      assert.match(await text(page, ".status"), /Reviewing.*Move 1 of 2/);
+      await press(page, "Undo");
       assert.match(await text(page, ".status"), /White to move.*Move 0 of 2/);
+      await press(page, "Redo");
       await press(page, "Redo");
       assert.match(await text(page, ".status"), /White to move.*Turn 2/);
 
@@ -120,8 +128,8 @@ describe("playing the computer", () => {
       const stored = JSON.parse(
         (await page.evaluate(() => localStorage.getItem("hive.game")))!,
       );
-      assert.equal(stored.v, 2);
-      assert.deepEqual(stored.seats, { w: "human", b: "easy" });
+      assert.equal(stored.v, 3);
+      assert.deepEqual(stored.seats, { w: "human", b: 2 });
 
       await page.setOfflineMode(true);
       h.server.state.offline = true;
@@ -146,7 +154,7 @@ describe("playing the computer", () => {
     await page.setViewport({ width: 390, height: 844 });
     await page.goto(h.server.url, { waitUntil: "networkidle0" });
     await press(page, "Computer");
-    await press(page, "Hard");
+    await press(page, "7");
     await press(page, "Black");
     await press(page, "Start game");
     await page.waitForSelector('.status[aria-busy="true"]', { timeout: 2000 });
@@ -176,7 +184,7 @@ describe("playing the computer", () => {
     await page.setViewport({ width: 390, height: 844 });
     await page.goto(h.server.url, { waitUntil: "networkidle0" });
     await press(page, "Computer");
-    await press(page, "Hard");
+    await press(page, "7");
     await press(page, "White");
     await press(page, "Start game");
     await place(page, "White soldier ant");
@@ -192,6 +200,71 @@ describe("playing the computer", () => {
       "the cancelled search played nothing",
     );
     await press(page, "Redo");
+    await waitForMoves(page, 4);
+    assert.deepEqual(page.errors, []);
+    await page.close();
+  });
+
+  it("freezes the board on the computer's turn in history, and plays on from the person's", async () => {
+    const page = await h.page();
+    await page.setViewport({ width: 390, height: 844 });
+    await page.goto(h.server.url, { waitUntil: "networkidle0" });
+    await press(page, "Computer");
+    await press(page, "1");
+    await press(page, "White");
+    await press(page, "Start game");
+    await place(page, "White soldier ant");
+    await waitForMoves(page, 2);
+    await place(page, "White grasshopper");
+    await waitForMoves(page, 4);
+
+    await press(page, "Undo");
+    assert.match(await text(page, ".status"), /Reviewing — undo or redo/);
+    const ant = (await rectOf(
+      page,
+      'button[aria-label^="White soldier ant"]',
+    ))!;
+    await page.mouse.click(ant.x + ant.width / 2, ant.y + ant.height / 2);
+    await settle(page);
+    assert.equal(await page.$$eval(".target", (t) => t.length), 0);
+    await new Promise((r) => setTimeout(r, 1200));
+    assert.equal(await moveCount(page), 4, "the computer waits in history");
+
+    await press(page, "Undo");
+    assert.match(await text(page, ".status"), /White to move.*Move 2 of 4/);
+    await place(page, "White spider");
+    await waitForMoves(page, 4);
+    assert.match(await text(page, ".status"), /White to move.*Turn 3/);
+    const last = await page.$$eval(".moves-list .move:not(.move-start)", (m) =>
+      m.map((e) => e.textContent),
+    );
+    assert.match(last[2]!, /^wS1/, "the redo tail gave way to the new move");
+    assert.deepEqual(page.errors, []);
+    await page.close();
+  });
+
+  it("thinks after redo only when the end is the computer's turn", async () => {
+    const page = await h.page();
+    await page.setViewport({ width: 390, height: 844 });
+    await page.goto(h.server.url, { waitUntil: "networkidle0" });
+    await press(page, "Computer");
+    await press(page, "1");
+    await press(page, "White");
+    await press(page, "Start game");
+    await place(page, "White soldier ant");
+    await waitForMoves(page, 2);
+
+    await press(page, "Undo");
+    await press(page, "Redo");
+    assert.equal(await page.$('.status[aria-busy="true"]'), null);
+    assert.match(await text(page, ".status"), /White to move.*Turn 2/);
+
+    await place(page, "White grasshopper");
+    await page.waitForSelector('.status[aria-busy="true"]', { timeout: 2000 });
+    await press(page, "Undo");
+    assert.equal(await page.$('.status[aria-busy="true"]'), null);
+    await press(page, "Redo");
+    await page.waitForSelector('.status[aria-busy="true"]', { timeout: 2000 });
     await waitForMoves(page, 4);
     assert.deepEqual(page.errors, []);
     await page.close();

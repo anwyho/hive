@@ -1,6 +1,12 @@
 import { strict as assert } from "node:assert";
 import { after, before, describe, it } from "node:test";
-import { harness, rectOf, rectOfText, settle } from "../helpers/app.js";
+import {
+  harness,
+  motionDone,
+  rectOf,
+  rectOfText,
+  settle,
+} from "../helpers/app.js";
 import { FORCED_PASS, WHITE_WINS } from "../support/games.js";
 
 type Harness = Awaited<ReturnType<typeof harness>>;
@@ -36,6 +42,7 @@ const count = (page: TestPage, selector: string) =>
 /* The highlighted cell nearest the board's middle, clear of the overlays at
    its edges. */
 const tapTarget = async (page: TestPage) => {
+  await motionDone(page);
   const point = await page.evaluate(() => {
     const board = document.querySelector(".board")!.getBoundingClientRect();
     const cx = board.x + board.width / 2;
@@ -96,6 +103,12 @@ describe("playing a game", () => {
   };
 
   const startWith = async (page: TestPage, expansions: string[]) => {
+    if (expansions.length > 0) {
+      await page.$eval(".expansions > summary", (s) =>
+        (s as HTMLElement).click(),
+      );
+      await settle(page);
+    }
     for (const name of expansions) {
       const sw = await page.$$eval(
         "[role=switch]",
@@ -125,7 +138,10 @@ describe("playing a game", () => {
     await place(page, "Black grasshopper");
     await place(page, "White queen bee");
     await place(page, "Black queen bee");
-    assert.equal(await count(page, ".tile-face"), 4 + 2 * 8);
+    assert.equal(
+      await count(page, ".hand .tile-face, .board-svg .tile-face"),
+      4 + 2 * 8,
+    );
 
     let mover = "";
     for (const name of ["White soldier ant 1", "White queen bee"]) {
@@ -138,7 +154,7 @@ describe("playing a game", () => {
     assert.ok(mover, "a white piece has destinations");
     const before = await centreOf(page, mover);
     await tapTarget(page);
-    assert.equal(await count(page, ".last-from"), 1);
+    assert.equal(await count(page, ".move-from"), 1);
     const moved = await page.$$eval(".moves-list .move", (els) =>
       els.map((e) => e.textContent),
     );
@@ -146,19 +162,19 @@ describe("playing a game", () => {
     assert.match(moved[5]!, /^w(A1|Q) /);
 
     await press(page, "Undo");
-    assert.equal(await count(page, ".last-from"), 0);
+    assert.equal(await count(page, ".move-from"), 0);
     assert.match(await text(page, ".status"), /White to move.*Move 4 of 5/);
     await press(page, "Redo");
-    assert.equal(await count(page, ".last-from"), 1);
+    assert.equal(await count(page, ".move-from"), 1);
     await press(page, "Undo");
     await press(page, "Redo");
 
     await page.reload({ waitUntil: "networkidle0" });
     assert.match(await text(page, ".status"), /Black to move.*Turn 3/);
-    assert.equal(await count(page, ".last-from"), 1);
+    assert.equal(await count(page, ".move-from"), 1);
     assert.notDeepEqual(await centreOf(page, mover), before);
     const stored = await page.evaluate(() => localStorage.getItem("hive.game"));
-    assert.equal(JSON.parse(stored!).v, 2);
+    assert.equal(JSON.parse(stored!).v, 3);
     assert.deepEqual(page.errors, []);
     await page.close();
   });
@@ -170,7 +186,7 @@ describe("playing a game", () => {
     assert.equal(await count(page, ".target"), 0);
     assert.equal(
       await text(page, ".notice"),
-      "The queen cannot be placed on the first turn.",
+      "The queen can't be placed on your first turn.",
     );
     await page.close();
   });
@@ -224,11 +240,12 @@ describe("playing a game", () => {
       board.x + board.width / 2,
       board.y + board.height / 2,
     );
+    assert.equal(await count(page, ".fit:not([hidden])"), 0);
     await page.mouse.wheel({ deltaY: 300 });
     await settle(page);
-    assert.equal(await count(page, ".fit-on"), 1);
+    assert.equal(await count(page, ".fit:not([hidden])"), 1);
     await press(page, "Fit");
-    assert.equal(await count(page, ".fit-on"), 0);
+    assert.equal(await count(page, ".fit:not([hidden])"), 0);
     await page.close();
   });
 
@@ -245,7 +262,11 @@ describe("playing a game", () => {
     await settle(page);
     await tapAt(page, 'button[aria-label^="Black soldier ant"]');
     await importRecord(page, WHITE_WINS);
-    assert.equal(await count(page, ".fit-on"), 0, "the import refits");
+    assert.equal(
+      await count(page, ".fit:not([hidden])"),
+      0,
+      "the import refits",
+    );
     assert.equal(await text(page, ".over-title"), "White wins");
     await press(page, "Review");
     await importRecord(page, WHITE_WINS);
@@ -294,6 +315,9 @@ describe("the phone layout", () => {
       deviceScaleFactor: 2,
     });
     await page.goto(h.server.url, { waitUntil: "networkidle0" });
+    await page.$eval(".expansions > summary", (s) =>
+      (s as HTMLElement).click(),
+    );
     for (const sw of await page.$$("[role=switch][aria-checked=false]")) {
       await sw.click();
     }

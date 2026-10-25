@@ -16,6 +16,8 @@ interface Props {
   kinds: readonly PieceId[];
   active: boolean;
   queenOnly: boolean;
+  /* Bugs with a legal placement; only read while the hand is active. */
+  placeable: ReadonlySet<Bug>;
   selected: Bug | null;
   pressure: number | null;
   covered: boolean;
@@ -28,6 +30,7 @@ export function Hand({
   kinds,
   active,
   queenOnly,
+  placeable,
   selected,
   pressure,
   covered,
@@ -53,7 +56,7 @@ export function Hand({
         {kinds.map((kind) => {
           const bug = bugOf(kind);
           const count = pieces.filter((p) => bugOf(p) === bug).length;
-          const locked = active && queenOnly && bug !== "Q";
+          const locked = active && count > 0 && !placeable.has(bug);
           const label = `${name} ${BUG_NAMES[bug].toLowerCase()}, ${count} in hand`;
           return (
             <li key={bug}>

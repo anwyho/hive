@@ -1,0 +1,105 @@
+/* ---- Each side's last move on the board, and the lines that name them ----
+
+   White's moves are olive, Black's plum: both stay clear of the accent the
+   targets and selection use, and of the queen's gold. */
+:root {
+  --mark-w: var(--color-accent-2-600);
+  --mark-b: oklch(0.5 0.15 330);
+}
+
+:root[data-theme="dark"] {
+  --mark-b: oklch(0.74 0.13 330);
+}
+
+.mark-w {
+  --mark: var(--mark-w);
+}
+
+.mark-b {
+  --mark: var(--mark-b);
+}
+
+.move-from {
+  fill: color-mix(in srgb, var(--mark) 18%, transparent);
+  stroke: var(--mark);
+  stroke-width: 4;
+  stroke-dasharray: 8 7;
+  stroke-linejoin: round;
+}
+
+.move-to {
+  fill: color-mix(in srgb, var(--mark) 12%, transparent);
+  stroke: var(--mark);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+.move-to.mark-latest {
+  stroke-width: 9;
+}
+
+/* World units: a hex's circumradius is 1. */
+.move-path {
+  stroke: var(--mark);
+  stroke-width: 0.12;
+  stroke-linecap: round;
+  stroke-dasharray: 0.01 0.28;
+  opacity: 0.85;
+}
+
+.last-line {
+  position: absolute;
+  top: calc(var(--space-2) + 38px);
+  left: var(--space-2);
+  max-width: calc(100% - 2 * var(--space-2));
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  font-size: 12px;
+  color: var(--color-neutral-700);
+  text-align: left;
+}
+
+.last-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.last-row.mark-latest {
+  font-weight: 650;
+  color: var(--color-text);
+}
+
+.last-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--mark);
+}
+
+.last-row .tile-icon {
+  flex: none;
+  width: 18px;
+}
+
+.last-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.last-line ~ .stack {
+  top: 112px;
+}
+
+.fit[hidden] {
+  display: none;
+}

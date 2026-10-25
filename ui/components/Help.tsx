@@ -1,7 +1,6 @@
 import { h } from "../../vendor/preact.module.js";
 import { usePager } from "../hooks/usePager.js";
 import { LESSONS } from "../lessons.js";
-import { Icon } from "./Icon.js";
 import { Legend, LessonDiagram } from "./LessonDiagram.js";
 import { Sheet } from "./Sheet.js";
 
@@ -48,18 +47,5 @@ export function Help({
         </button>
       </nav>
     </Sheet>
-  );
-}
-
-export function HelpButton({ onClick }: { onClick(): void }) {
-  return (
-    <button
-      class="help-btn"
-      aria-label="How to play"
-      title="How to play"
-      onClick={onClick}
-    >
-      <Icon name="help" />
-    </button>
   );
 }

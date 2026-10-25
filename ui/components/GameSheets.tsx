@@ -18,6 +18,7 @@ export function MenuSheet(props: {
   onNewGame(): void;
   onCopy(): void;
   onImport(): void;
+  onHelp(): void;
   onDraw(): void;
   onResign(): void;
 }) {
@@ -29,6 +30,9 @@ export function MenuSheet(props: {
         </button>
         <button class="btn" onClick={props.onCopy}>
           Copy game record
+        </button>
+        <button class="btn" onClick={props.onHelp}>
+          How to play
         </button>
         <button class="btn" onClick={props.onImport}>
           Import a game record

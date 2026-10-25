@@ -144,6 +144,9 @@ const GLYPHS: Readonly<Record<Bug, () => JSX.Element>> = {
 };
 
 export const FACE = polygon(42);
+/* Inside the face, so it never meets the selection rim or the board's
+   outer rings (last move, buried queen). */
+const RIM = polygon(35);
 
 export function Glyph({ bug }: { bug: Bug }) {
   return (
@@ -167,6 +170,7 @@ export function TileBody({ piece, class: extra = "" }: TileProps) {
     <g class={`tile tile-${color} ${extra}`}>
       <polygon class="tile-edge" points={FACE} transform="translate(0 5)" />
       <polygon class="tile-face" points={FACE} />
+      {bug === "Q" ? <polygon class="tile-queen-rim" points={RIM} /> : null}
       <Glyph bug={bug} />
       <text class="tile-letter" x="0" y="35" text-anchor="middle">
         {bug}

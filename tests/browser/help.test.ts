@@ -47,7 +47,6 @@ describe("how to play", () => {
           JSON.stringify({
             v: 1,
             game,
-            tournamentOpening: true,
             cursor: 999,
             ending: null,
           }),
@@ -60,7 +59,13 @@ describe("how to play", () => {
 
   it("pages through every lesson with the buttons and closes", async () => {
     const page = await open();
-    await click(page, 'button[aria-label="How to play"]');
+    assert.equal(
+      await page.$('.area-board button[aria-label="How to play"]'),
+      null,
+      "the guide lives in the menu, not on the board",
+    );
+    await press(page, "Menu");
+    await press(page, "How to play");
     assert.equal(await step(page), `1 / ${LESSONS.length}`);
     const seen = [await title(page)];
     for (let i = 1; i < LESSONS.length; i++) {
@@ -91,7 +96,8 @@ describe("how to play", () => {
 
   it("turns pages by swipe and arrow key, and closes on Escape", async () => {
     const page = await open();
-    await click(page, 'button[aria-label="How to play"]');
+    await press(page, "Menu");
+    await press(page, "How to play");
     const box = await page.$eval(".help-page", (el) => {
       const r = el.getBoundingClientRect();
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
@@ -127,7 +133,8 @@ describe("how to play", () => {
   it("opens on the selected bug's lesson, and from the new-game screen", async () => {
     const page = await open();
     await click(page, 'button[aria-label^="White soldier ant"]');
-    await click(page, 'button[aria-label="How to play"]');
+    await press(page, "Menu");
+    await press(page, "How to play");
     assert.equal(await title(page), "Soldier ant");
     await page.keyboard.press("Escape");
     await settle(page);

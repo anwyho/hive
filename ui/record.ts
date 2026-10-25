@@ -1,5 +1,4 @@
 import {
-  ParseError,
   newGame,
   parseGame,
   play,
@@ -69,38 +68,13 @@ export function jump(record: GameRecord, cursor: number): GameRecord {
 export const undo = (record: GameRecord) => jump(record, record.cursor - 1);
 export const redo = (record: GameRecord) => jump(record, record.cursor + 1);
 
-/* Against the computer a step lands only on a position where a person is to
-   move, so one undo takes back the computer's reply and the move before it.
-   `humanAt(cursor)` says whether a person moves after `cursor` moves. */
-export function undoTurn(
-  record: GameRecord,
-  humanAt: (cursor: number) => boolean,
-): GameRecord {
-  for (let c = record.cursor - 1; c >= 0; c--) {
-    if (humanAt(c)) return jump(record, c);
-  }
-  return record;
-}
-
-export function redoTurn(
-  record: GameRecord,
-  humanAt: (cursor: number) => boolean,
-): GameRecord {
-  let c = record.cursor + 1;
-  while (c < record.moves.length && !humanAt(c)) c++;
-  return jump(record, c);
-}
-
 /* "Undo last move" from the game-over screen: a resignation or agreed draw is
    the last thing that happened, so it goes before any engine move does. */
-export function retract(
-  record: GameRecord,
-  humanAt: (cursor: number) => boolean = () => true,
-): GameRecord {
+export function retract(record: GameRecord): GameRecord {
   if (record.ending !== null && atEnd(record)) {
     return { ...record, ending: null };
   }
-  return undoTurn(record, humanAt);
+  return undo(record);
 }
 
 export function end(record: GameRecord, ending: Ending): GameRecord {
@@ -166,18 +140,7 @@ export function lastMove(
   };
 }
 
-/* UHP records carry no tournament-opening flag, so a game is read under the
-   standard rule first and under the older one only if that fails. */
 export function importGame(text: string): GameRecord {
-  let first: unknown;
-  for (const tournamentOpening of [true, false]) {
-    try {
-      const g = parseGame(text, { tournamentOpening });
-      return { ...g, cursor: g.moves.length, ending: null };
-    } catch (error) {
-      if (!(error instanceof ParseError)) throw error;
-      first ??= error;
-    }
-  }
-  throw first;
+  const g = parseGame(text);
+  return { ...g, cursor: g.moves.length, ending: null };
 }

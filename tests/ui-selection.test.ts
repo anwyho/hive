@@ -57,10 +57,10 @@ describe("picking from the hand", () => {
     assert.equal(pick.notice, "It is White's turn.");
   });
 
-  it("explains the tournament opening", () => {
+  it("explains why the queen waits on the first turn", () => {
     const pick = selectHand(newGame(), "w", "Q");
     assert.equal(pick.selection, null);
-    assert.equal(pick.notice, "The queen cannot be placed on the first turn.");
+    assert.equal(pick.notice, "The queen can't be placed on your first turn.");
   });
 
   it("holds every other bug while the queen is due", () => {
@@ -145,7 +145,6 @@ describe("display helpers", () => {
     const base = kindsInGame(
       {
         expansions: { mosquito: false, ladybug: false, pillbug: false },
-        tournamentOpening: true,
       },
       "b",
     );
@@ -155,7 +154,6 @@ describe("display helpers", () => {
     const all = kindsInGame(
       {
         expansions: { mosquito: true, ladybug: true, pillbug: true },
-        tournamentOpening: true,
       },
       "w",
     );

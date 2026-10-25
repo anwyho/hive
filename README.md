@@ -22,6 +22,7 @@ npm test               # node:test units, then Puppeteer browser tests
 npm run format:check   # Prettier
 npm run vendor         # re-copy Preact out of node_modules into vendor/
 npm run site           # assemble _site/ the way the deploy does
+npm run ladder -- 10   # build first; every AI level against the two below it, 10 games each
 ```
 
 Service workers need `localhost` or HTTPS — `127.0.0.1` is fine, a `file://`
@@ -42,7 +43,8 @@ hive/ai/            the computer opponent: search, evaluation, hashing; no DOM
 ui/                 App.tsx, components/, hooks/ (Preact, classic JSX runtime), and
                     the pure modules they share: geometry, record, storage, selection, players
 ui/ai/              the module worker the computer searches in, its client and message types
-styles/             tokens.css + pieces.css (tile and bug colours) + base.css + app.css + opponent.css
+styles/             tokens.css + pieces.css (tile and bug colours) + base.css + app.css,
+                    then opponent.css (new-game choices) and last-move.css (move marks)
 vendor/             Preact 10 + hooks, as ES modules; hand-written .d.ts beside each
 types/              ambient types: the JSX namespace, shell globals, the worker scope
 fonts/ icons/       Caprasimo + Figtree (latin subset); the .svg are the .png sources
@@ -67,11 +69,11 @@ and fails if any precached path is missing from the copy.
 
 ## Storage
 
-| Key          | What                                                                      |
-| ------------ | ------------------------------------------------------------------------- |
-| `hive.theme` | the theme choice, absent when it is "system"                              |
-| `hive.prefs` | device preferences: the dismissed install hint                            |
-| `hive.game`  | the current game: UHP GameString, cursor, ending, options, seats (`v: 2`) |
+| Key          | What                                                             |
+| ------------ | ---------------------------------------------------------------- |
+| `hive.theme` | the theme choice, absent when it is "system"                     |
+| `hive.prefs` | device preferences: the dismissed install hint                   |
+| `hive.game`  | the current game: UHP GameString, cursor, ending, seats (`v: 3`) |
 
 Icons: the PNGs are rasterised from `icons/icon.svg` and `icons/maskable.svg`
 with `rsvg-convert -w <size> -h <size>` (180 apple-touch, 192, 512, maskable 512).

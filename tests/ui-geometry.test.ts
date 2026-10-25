@@ -109,4 +109,13 @@ describe("view transforms", () => {
     assert.equal(fit(box, { width: 400, height: 400 }, 0).scale, 60);
     assert.equal(fit(box, { width: 10, height: 10 }, 0).scale, MIN_SCALE);
   });
+
+  it("keeps a top band clear when asked", () => {
+    const box = { minX: -1, minY: -1, maxX: 1, maxY: 1 };
+    const plain = fit(box, { width: 400, height: 400 }, 0, 1000);
+    const banded = fit(box, { width: 400, height: 400 }, 0, 1000, 100);
+    assert.ok(banded.scale < plain.scale);
+    const topEdge = banded.y + box.minY * banded.scale;
+    assert.ok(Math.abs(topEdge - 100) < 1e-9, `top edge at ${topEdge}`);
+  });
 });
