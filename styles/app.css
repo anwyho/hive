@@ -232,7 +232,7 @@ h2 {
 }
 
 .setup-cluster {
-  width: min(260px, 70%);
+  width: min(220px, 60%);
   height: auto;
   overflow: visible;
 }

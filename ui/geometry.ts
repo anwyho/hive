@@ -130,7 +130,7 @@ export function fit(
   box: Box | null,
   size: Size,
   margin: number,
-  maxScale = 44,
+  maxScale = 60,
 ): View {
   const b = box ?? { minX: -1, minY: -1, maxX: 1, maxY: 1 };
   const w = Math.max(1, size.width - 2 * margin);

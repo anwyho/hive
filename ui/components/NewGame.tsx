@@ -73,7 +73,7 @@ export function NewGame({
       <header class="setup-hero">
         <svg
           class="setup-cluster"
-          viewBox="-70 -150 330 270"
+          viewBox="-100 -170 285 265"
           aria-hidden="true"
         >
           {CLUSTER.map(([piece, q, r]) => (

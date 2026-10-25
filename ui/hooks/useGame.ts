@@ -34,9 +34,10 @@ export function useGame(seats: Seats) {
   const state = record ? states[record.cursor]! : null;
   const outcome = record && state ? outcomeAt(record, state) : null;
   const seat = state ? seats[toMove(state)] : null;
+  const over = outcome !== null;
 
   useEffect(() => {
-    if (!state || outcome || seat?.kind !== "computer") return;
+    if (!state || over || seat?.kind !== "computer") return;
     let live = true;
     void seat.choose(state).then((move) => {
       if (live) setRecord((r) => (r ? playMove(r, move) : r));
@@ -44,7 +45,7 @@ export function useGame(seats: Seats) {
     return () => {
       live = false;
     };
-  }, [state, outcome, seat]);
+  }, [state, over, seat]);
 
   const last = useMemo(
     () => (record ? lastMove(record, states) : null),

@@ -38,11 +38,12 @@ index.html          the shell: PWA head, inline theme boot placeholder, the modu
 sw.ts               configuration + the generated block; imports the runtime
 pwa/                the reusable shell — see pwa/README.md and pwa/AGENTS.md
 hive/               the game engine: pure TypeScript, no DOM
-ui/                 App.tsx, components/, hooks/ (Preact, classic JSX runtime)
+ui/                 App.tsx, components/, hooks/ (Preact, classic JSX runtime), and
+                    the pure modules they share: geometry, record, storage, selection, players
 styles/             tokens.css + base.css + app.css
 vendor/             Preact 10 + hooks, as ES modules; hand-written .d.ts beside each
 types/              ambient types: the JSX namespace, shell globals, the worker scope
-fonts/ icons/       Caprasimo + Figtree (latin subset); placeholder icons
+fonts/ icons/       Caprasimo + Figtree (latin subset); the .svg are the .png sources
 tests/              node:test units; tests/browser/ runs under Puppeteer
 tools/              build.mjs, inline.mjs, copy-static.mjs, check-scripts.mjs,
                     vendor.mjs, serve.ts, build-site.sh
@@ -64,10 +65,14 @@ and fails if any precached path is missing from the copy.
 
 ## Storage
 
-| Key          | What                                           |
-| ------------ | ---------------------------------------------- |
-| `hive.theme` | the theme choice, absent when it is "system"   |
-| `hive.prefs` | device preferences: the dismissed install hint |
+| Key          | What                                                                      |
+| ------------ | ------------------------------------------------------------------------- |
+| `hive.theme` | the theme choice, absent when it is "system"                              |
+| `hive.prefs` | device preferences: the dismissed install hint                            |
+| `hive.game`  | the current game: UHP GameString, cursor, ending, options (schema `v: 1`) |
+
+Icons: the PNGs are rasterised from `icons/icon.svg` and `icons/maskable.svg`
+with `rsvg-convert -w <size> -h <size>` (180 apple-touch, 192, 512, maskable 512).
 
 The theme has its own key because the inline boot script reads it before any
 module has run.

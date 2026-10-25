@@ -140,21 +140,6 @@ export function Board({
               </g>
             );
           })}
-          {cells.map(([hex, stack]) =>
-            stack.length > 1 ? (
-              <g
-                key={"h" + hexKey(hex)}
-                class="tile-badge"
-                aria-hidden="true"
-                transform={`${at(hex, (stack.length - 1) * LIFT + (hexKey(hex) === selectedKey ? LIFT : 0))} translate(30 -30)`}
-              >
-                <circle r="17" />
-                <text y="7" text-anchor="middle">
-                  {stack.length}
-                </text>
-              </g>
-            ) : null,
-          )}
           {last ? (
             <polygon
               class="last-to"
@@ -177,6 +162,21 @@ export function Board({
               </g>
             );
           })}
+          {cells.map(([hex, stack]) =>
+            stack.length > 1 ? (
+              <g
+                key={"h" + hexKey(hex)}
+                class="tile-badge"
+                aria-hidden="true"
+                transform={`${at(hex, (stack.length - 1) * LIFT + (hexKey(hex) === selectedKey ? LIFT : 0))} translate(26 -28)`}
+              >
+                <circle r="17" />
+                <text y="7" text-anchor="middle">
+                  {stack.length}
+                </text>
+              </g>
+            ) : null,
+          )}
         </g>
       </svg>
       <button

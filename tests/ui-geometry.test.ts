@@ -106,7 +106,7 @@ describe("view transforms", () => {
     const v = fit(box, { width: 400, height: 400 }, 0, 1000);
     assert.equal(v.scale, 100);
     close(toScreen(v, { x: 0, y: 0 }), { x: 200, y: 200 });
-    assert.equal(fit(box, { width: 400, height: 400 }, 0).scale, 44);
+    assert.equal(fit(box, { width: 400, height: 400 }, 0).scale, 60);
     assert.equal(fit(box, { width: 10, height: 10 }, 0).scale, MIN_SCALE);
   });
 });
